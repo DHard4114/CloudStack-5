@@ -64,13 +64,24 @@ async function createParticipant({ sessionId, userId, playerNickname }) {
 }
 
 async function getLeaderboard(joinCode, limit = 20) {
+  if (!joinCode) return [];
+
+  // MySQL prepared statements can be sensitive with LIMIT placeholders on some setups.
+  // Coerce limit to a safe integer and inline it to avoid stmt arg mismatches.
+  const safeLimit = Number.isFinite(Number(limit))
+    ? Math.max(1, Math.min(200, Number(limit)))
+    : 20;
+
   const [rows] = await pool.execute(
     `SELECT sp.player_nickname, sp.total_score, sp.correct_count, sp.avatar_url,
             RANK() OVER (ORDER BY sp.total_score DESC, sp.joined_at ASC) AS current_rank
      FROM session_participants sp
      JOIN quiz_sessions qs ON qs.id = sp.session_id
      WHERE qs.join_code = ? AND qs.status IN ('waiting','in_progress')
-     ORDER BY current_rank LIMIT ?`, [joinCode, limit]);
+     ORDER BY current_rank
+     LIMIT ${safeLimit}`,
+    [joinCode]
+  );
   return rows;
 }
 

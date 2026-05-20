@@ -20,6 +20,7 @@ function initGameSocket(io) {
 
 async function pushLeaderboard(io, joinCode) {
   try {
+    if (!joinCode || typeof joinCode !== 'string') return;
     const leaderboard = await sessionRepo.getLeaderboard(joinCode, 20);
     io.to(`session:${joinCode}`).emit('leaderboard-update', {
       timestamp: new Date().toISOString(),
