@@ -85,8 +85,8 @@ const Dashboard = () => {
     try {
       const { data } = await sessionService.create({ quiz_uuid: id, quiz_id: id })
       const sess = data?.data || data
-      toast.success(`Sesi dibuat: PIN ${sess.pin || sess.code}`, { id: t })
-      navigate(`/host/${sess.uuid || sess.id}`)
+      toast.success(`Sesi dibuat: PIN ${sess.join_code || '------'}`, { id: t })
+      navigate(`/host/${sess.uuid || sess.id}`, { state: { session: sess, pin: sess.join_code } })
     } catch {
       toast.dismiss(t)
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Play, SkipForward, Square, Copy, Check, Users, Radio, X } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -17,6 +17,7 @@ import { cn } from '@/utils/cn'
 const HostRoom = () => {
   const { uuid } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { token } = useAuth()
 
   const [session, setSession]         = useState(null)
@@ -32,70 +33,48 @@ const HostRoom = () => {
 
   // ----------- Bootstrap session info -----------
   useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      try {
-        const { data } = await sessionService.getByPin(uuid)
-        const sess = data?.data || data
-        if (mounted) setSession(sess)
-      } catch {
-        // session bisa juga diambil dari socket
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-    load()
-    return () => { mounted = false }
-  }, [uuid])
+    const sess = location.state?.session || null
+    if (sess) setSession(sess)
+    setLoading(false)
+  }, [location.state])
 
   // ----------- Socket listeners -----------
   useEffect(() => {
     const socket = connectSocket(token)
+    const joinCode = session?.join_code || location.state?.pin
 
-    socket.emit('host:join', { session_uuid: uuid })
+    // Disabled sementara: backend socket saat ini hanya support:
+    // - join-session
+    // - request-leaderboard
+    // - leaderboard-update
+    //
+    // Event FE lama (host:join, host:session_info, host:question_started,
+    // host:answer_submitted, host:session_ended) disimpan sebagai referensi:
+    //
+    // socket.emit('host:join', { session_uuid: uuid })
+    // socket.on('host:session_info', ...)
+    // socket.on('host:question_started', ...)
+    // socket.on('host:answer_submitted', ...)
+    // socket.on('host:session_ended', ...)
 
-    socket.on('host:session_info', (data) => {
-      setSession((prev) => ({ ...(prev || {}), ...data }))
-      setTotalQuestions(data.total_questions ?? totalQuestions)
-    })
+    if (joinCode) {
+      socket.emit('join-session', { join_code: joinCode, player_nickname: 'HOST' })
+      socket.emit('request-leaderboard', { join_code: joinCode })
+    }
 
-    socket.on('session:players_update', (data) => {
-      setPlayers(data.players || data || [])
-    })
-
-    socket.on('host:question_started', (data) => {
-      setCurrentQuestion(data.question)
-      setQuestionIdx(data.index ?? questionIdx + 1)
-      setPhase('question')
-      setAnswerStats({ submitted: 0, total: players.length })
-    })
-
-    socket.on('host:answer_submitted', (data) => {
-      setAnswerStats((prev) => ({
-        submitted: data.submitted ?? prev.submitted + 1,
-        total: data.total ?? prev.total,
-      }))
-    })
-
-    socket.on('host:leaderboard_update', (data) => {
-      setLeaderboard(data.leaderboard || data || [])
+    socket.on('leaderboard-update', (data) => {
+      const list = data?.leaderboard || []
+      setLeaderboard(list)
+      setPlayers(list.map((p, i) => ({ id: i, nickname: p.player_nickname, score: p.total_score })))
+      setAnswerStats((prev) => ({ ...prev, total: list.length }))
       setPhase('leaderboard')
     })
 
-    socket.on('host:session_ended', () => {
-      setPhase('finished')
-    })
-
     return () => {
-      socket.off('host:session_info')
-      socket.off('session:players_update')
-      socket.off('host:question_started')
-      socket.off('host:answer_submitted')
-      socket.off('host:leaderboard_update')
-      socket.off('host:session_ended')
+      socket.off('leaderboard-update')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uuid, token])
+  }, [uuid, token, session, location.state])
 
   useEffect(() => () => disconnectSocket(), [])
 
@@ -106,30 +85,33 @@ const HostRoom = () => {
     }
     try {
       await sessionService.start(uuid)
-      getSocket()?.emit('host:start_session', { session_uuid: uuid })
+      const joinCode = session?.join_code || location.state?.pin
+      if (joinCode) getSocket()?.emit('request-leaderboard', { join_code: joinCode })
+      // Disabled sementara (backend belum support event ini):
+      // getSocket()?.emit('host:start_session', { session_uuid: uuid })
       toast.success('Sesi dimulai')
     } catch {}
   }
 
   const onNext = async () => {
     try {
-      await sessionService.next(uuid)
-      getSocket()?.emit('host:next_question', { session_uuid: uuid })
+      const joinCode = session?.join_code || location.state?.pin
+      if (joinCode) getSocket()?.emit('request-leaderboard', { join_code: joinCode })
     } catch {}
   }
 
   const onEnd = async () => {
     if (!confirm('Akhiri sesi sekarang?')) return
     try {
-      await sessionService.end(uuid)
-      getSocket()?.emit('host:end_session', { session_uuid: uuid })
+      await sessionService.finish(uuid)
+      disconnectSocket()
       toast.success('Sesi berakhir')
       setTimeout(() => navigate('/dashboard'), 1500)
     } catch {}
   }
 
   const copyPin = () => {
-    const pin = session?.pin || session?.code
+    const pin = session?.join_code || session?.pin || session?.code || location.state?.pin
     if (!pin) return
     navigator.clipboard.writeText(String(pin))
     setCopied(true)
@@ -137,7 +119,7 @@ const HostRoom = () => {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const pin = session?.pin || session?.code
+  const pin = session?.join_code || session?.pin || session?.code || location.state?.pin
 
   if (loading) {
     return (

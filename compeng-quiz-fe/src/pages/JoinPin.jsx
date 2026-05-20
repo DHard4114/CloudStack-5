@@ -66,10 +66,13 @@ const JoinPin = () => {
     setLoading(true)
     const t = toast.loading('Bergabung ke sesi...')
     try {
-      const { data } = await sessionService.join({ pin: pinStr, nickname: nick || user?.username })
+      const { data } = await sessionService.join({
+        join_code: pinStr,
+        player_nickname: nick || user?.username,
+      })
       const sess = data?.data || data
       toast.success('Berhasil bergabung!', { id: t })
-      navigate(`/play/${sess.session_uuid || sess.uuid || pinStr}`, {
+      navigate(`/play/${sess.session_uuid || sess.uuid}`, {
         state: { pin: pinStr, nickname: nick, session: sess },
       })
     } catch {

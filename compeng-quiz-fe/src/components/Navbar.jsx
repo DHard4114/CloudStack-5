@@ -18,12 +18,12 @@ const Navbar = () => {
   const navLinks = isTeacher
     ? [
         { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-        { to: '/quizzes',   label: 'Kuis Saya', icon: BookOpen },
-        { to: '/sessions',  label: 'Sesi Live', icon: Radio },
+        { to: '/dashboard', label: 'Kuis Saya', icon: BookOpen },
+        { to: '/dashboard', label: 'Sesi Live', icon: Radio },
       ]
     : [
         { to: '/join',      label: 'Gabung Kuis', icon: Radio },
-        { to: '/history',   label: 'Riwayat',     icon: LayoutGrid },
+        { to: '/join',      label: 'Riwayat',     icon: LayoutGrid },
       ]
 
   return (

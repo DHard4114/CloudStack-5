@@ -66,78 +66,34 @@ const QuizRoom = () => {
   // ============================================================
   useEffect(() => {
     const socket = connectSocket(token)
+    const joinCode = location.state?.pin
+    // Disabled sementara: backend socket saat ini hanya support:
+    // join-session, request-leaderboard, leaderboard-update.
+    // Event FE lama disimpan sebagai referensi:
+    // session:join, session:question, session:reveal,
+    // session:leaderboard, session:end, session:error.
+    if (joinCode) {
+      socket.emit('join-session', { join_code: joinCode, player_nickname: nickname })
+      socket.emit('request-leaderboard', { join_code: joinCode })
+    }
 
-    // Join room
-    socket.emit('session:join', {
-      session_uuid: uuid,
-      nickname,
-      user_id: user?.id,
-    })
-
-    // ----- LOBBY events -----
-    socket.on('session:players_update', (data) => {
-      setPlayers(data.players || data || [])
-    })
-
-    // ----- QUESTION events -----
-    socket.on('session:question', (data) => {
-      const q = data.question || data
-      setQuestion(q)
-      setQuestionIdx(data.index ?? questionIdx + 1)
-      setTotalQuestions(data.total ?? totalQuestions)
-      setSelected(null)
-      setRevealed(null)
-      setPhase('question')
-      submitTimeRef.current = Date.now()
-      reset(q.duration || q.time_limit || 30)
-      setTimeout(() => start(q.duration || q.time_limit || 30), 100)
-    })
-
-    // ----- REVEAL events -----
-    socket.on('session:reveal', (data) => {
-      setRevealed({
-        correct_answer: data.correct_answer ?? data.correctAnswer,
-        explanation:    data.explanation,
-        my_correct:     data.my_correct ?? data.correct,
-        points_earned:  data.points_earned ?? data.points ?? 0,
-        new_score:      data.new_score ?? data.score,
-        new_rank:       data.new_rank ?? data.rank,
-      })
-      if (data.new_score != null) setScore(data.new_score)
-      if (data.new_rank != null)  setRank(data.new_rank)
-      if (data.my_correct) setStreak((s) => s + 1)
-      else                 setStreak(0)
-      setPhase('reveal')
-    })
-
-    // ----- LEADERBOARD events -----
-    socket.on('session:leaderboard', (data) => {
-      setLeaderboard(data.leaderboard || data || [])
+    socket.on('leaderboard-update', (data) => {
+      const list = data?.leaderboard || []
+      setLeaderboard(list.map((p) => ({
+        nickname: p.player_nickname,
+        score: p.total_score,
+        rank: p.current_rank,
+      })))
+      setPlayers(list.map((p, i) => ({ id: i, nickname: p.player_nickname })))
       setPhase('leaderboard')
     })
 
-    // ----- END events -----
-    socket.on('session:end', (data) => {
-      setFinalResult(data)
-      setLeaderboard(data.leaderboard || data.final_ranking || [])
-      setPhase('finished')
-    })
-
-    socket.on('session:error', (err) => {
-      toast.error(err.message || 'Terjadi kesalahan sesi')
-    })
-
     return () => {
-      socket.off('session:players_update')
-      socket.off('session:question')
-      socket.off('session:reveal')
-      socket.off('session:leaderboard')
-      socket.off('session:end')
-      socket.off('session:error')
+      socket.off('leaderboard-update')
       // Note: tidak disconnect socket di unmount karena bisa dipakai di tempat lain
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uuid, token, nickname])
+  }, [uuid, token, nickname, location.state?.pin])
 
   // Cleanup socket saat keluar dari quiz room sepenuhnya
   useEffect(() => () => disconnectSocket(), [])
@@ -148,25 +104,34 @@ const QuizRoom = () => {
   const handleSubmit = async (answerIdx) => {
     if (selected !== null || !question) return
     setSelected(answerIdx ?? -1)
-    const responseTime = (Date.now() - (submitTimeRef.current || Date.now())) / 1000
+    const timeTakenMs = Math.max(0, Date.now() - (submitTimeRef.current || Date.now()))
+    const options = question?.options || question?.choices || []
+    const selectedOption = answerIdx !== null && answerIdx !== undefined ? options[answerIdx] : null
+    const selectedOptionId = typeof selectedOption === 'object'
+      ? (selectedOption?.id || selectedOption?.option_id || selectedOption?.optionId)
+      : null
 
-    const socket = getSocket()
-    socket?.emit('session:answer', {
-      session_uuid: uuid,
-      question_uuid: question.uuid || question.id,
-      answer: answerIdx,
-      response_time: responseTime,
-    })
+    // Disabled sementara (backend belum support session:answer).
+    // const socket = getSocket()
+    // socket?.emit('session:answer', {
+    //   session_uuid: uuid,
+    //   question_uuid: question.uuid || question.id,
+    //   selected_option_id: selectedOptionId,
+    //   time_taken_ms: timeTakenMs,
+    // })
 
-    // Fallback HTTP submission jika socket tidak available
+    // Submit utama via HTTP sesuai kontrak backend
     try {
+      if (!selectedOptionId) return
       await sessionService.submit(uuid, {
         question_uuid: question.uuid || question.id,
-        answer: answerIdx,
-        response_time: responseTime,
+        selected_option_id: selectedOptionId,
+        time_taken_ms: timeTakenMs,
       })
+      const joinCode = location.state?.pin
+      if (joinCode) getSocket()?.emit('request-leaderboard', { join_code: joinCode })
     } catch {
-      // ignored — socket akan handle
+      // ignored
     }
   }
 

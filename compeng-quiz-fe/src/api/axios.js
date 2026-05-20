@@ -38,7 +38,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error?.response?.status
-    const message = error?.response?.data?.message || error?.message || 'Terjadi kesalahan'
+    const message = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Terjadi kesalahan'
 
     if (status === 401) {
       // Token expired / invalid
@@ -82,12 +82,9 @@ export const quizService = {
 export const sessionService = {
   create:      (payload)              => api.post('/api/sessions', payload),
   join:        (payload)              => api.post('/api/sessions/join', payload),
-  getByPin:    (pin)                  => api.get(`/api/sessions/pin/${pin}`),
   submit:      (uuid, payload)        => api.post(`/api/sessions/${uuid}/answer`, payload),
-  leaderboard: (uuid)                 => api.get(`/api/sessions/${uuid}/leaderboard`),
   start:       (uuid)                 => api.post(`/api/sessions/${uuid}/start`),
-  next:        (uuid)                 => api.post(`/api/sessions/${uuid}/next`),
-  end:         (uuid)                 => api.post(`/api/sessions/${uuid}/end`),
+  finish:      (uuid)                 => api.patch(`/api/sessions/${uuid}/finish`),
 }
 
 export default api

@@ -99,18 +99,30 @@ const QuizEditor = () => {
     setSubmitting(true)
     const loadingToast = toast.loading('Menyimpan pertanyaan...')
     try {
+      const normalizedOptions = draft.options.map((text, index) => ({
+        option_text: text.trim(),
+        is_correct: index === Number(draft.correctIndex),
+      }))
+
       const payload = {
         question_text: draft.text.trim(),
-        options:       draft.options.map((o) => o.trim()),
-        correct_index: draft.correctIndex,
-        points:        Number(draft.points),
-        time_limit:    Number(draft.timeLimit),
+        options: normalizedOptions,
+        base_points: Number(draft.points),
+        time_limit_seconds: Number(draft.timeLimit),
       }
       const { data } = await quizService.addQuestion(uuid, payload)
-      const created  = data?.data?.question || data?.question || data?.data || payload
+      const created  = data?.data?.question || data?.question || data?.data || {}
+      const localQuestion = {
+        ...created,
+        question_text: payload.question_text,
+        options: payload.options.map((opt) => opt.option_text),
+        correct_index: payload.options.findIndex((opt) => opt.is_correct),
+        points: payload.base_points,
+        time_limit: payload.time_limit_seconds,
+      }
 
       toast.success('Pertanyaan ditambahkan', { id: loadingToast })
-      setQuestions((prev) => [...prev, { ...created, ...payload }])
+      setQuestions((prev) => [...prev, localQuestion])
       setDraft(emptyDraft())
     } catch (err) {
       console.error('Add question error', err)
@@ -134,7 +146,7 @@ const QuizEditor = () => {
       const sessionUuid = session?.uuid || session?.session_uuid
       if (!sessionUuid) throw new Error('UUID sesi tidak ditemukan dalam response')
       toast.success('Sesi dibuat', { id: loadingToast })
-      navigate(`/host/${sessionUuid}`, { state: { fresh: true } })
+      navigate(`/host/${sessionUuid}`, { state: { fresh: true, session, pin: session?.join_code } })
     } catch (err) {
       console.error('Start session error', err)
       toast.error(err?.response?.data?.message || 'Gagal memulai sesi', { id: loadingToast })
