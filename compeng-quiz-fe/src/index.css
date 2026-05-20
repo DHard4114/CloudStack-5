@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   QuizLive CompEng — Global Styles
+   Editorial Tech Brutalism
+   ============================================================ */
+
+@layer base {
+  :root {
+    --color-bg:        #FAFAF7;
+    --color-surface:   #FFFFFF;
+    --color-ink:       #0F0F0D;
+    --color-muted:     #74716A;
+    --color-line:      #E8E6DC;
+    --color-accent:    #F58A00;
+    --color-accent-fg: #FFFFFF;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-sans bg-ink-50 text-ink-900;
+    font-feature-settings: 'ss01', 'cv11', 'liga';
+    min-height: 100vh;
+  }
+
+  /* Selection editorial */
+  ::selection {
+    background-color: var(--color-ink);
+    color: var(--color-accent);
+  }
+
+  /* Focus ring konsisten — disiplin aksesibilitas */
+  *:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Scrollbar minimal */
+  ::-webkit-scrollbar          { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track    { background: transparent; }
+  ::-webkit-scrollbar-thumb    { background: #D4D1C2; border-radius: 0; border: 3px solid var(--color-bg); }
+  ::-webkit-scrollbar-thumb:hover { background: #A8A496; }
+
+  /* Heading defaults — editorial */
+  h1, h2, h3, h4 {
+    @apply font-display tracking-editorial;
+  }
+
+  /* Form reset */
+  input, textarea, select, button {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  /* ---------- Container ---------- */
+  .container-editorial {
+    @apply mx-auto px-6 md:px-10 lg:px-16;
+    max-width: 1440px;
+  }
+
+  /* ---------- Eyebrow / Kicker ---------- */
+  .eyebrow {
+    @apply font-mono text-eyebrow uppercase text-ink-600 inline-flex items-center gap-2;
+  }
+  .eyebrow::before {
+    content: '';
+    @apply inline-block w-6 h-px bg-ink-400;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-sans font-medium tracking-tight
+           transition-all duration-200 select-none relative;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-900 text-ink-50 px-6 py-3 text-sm rounded-sm
+           hover:bg-flame-500 hover:-translate-y-px
+           active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply btn bg-transparent text-ink-900 border border-ink-900 px-6 py-3 text-sm rounded-sm
+           hover:bg-ink-900 hover:text-ink-50;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink-700 hover:text-ink-900 px-3 py-2 text-sm;
+  }
+
+  .btn-brutal {
+    @apply btn bg-flame-500 text-ink-900 border-2 border-ink-900 px-7 py-3.5 text-sm rounded-sm
+           shadow-brutal text-ink-900
+           hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm
+           active:translate-x-[5px] active:translate-y-[5px] active:shadow-none;
+  }
+
+  /* ---------- Inputs ---------- */
+  .input-field {
+    @apply w-full bg-transparent border-0 border-b border-ink-300 px-0 py-3
+           text-ink-900 placeholder-ink-400 text-base
+           focus:outline-none focus:border-ink-900 focus:ring-0
+           transition-colors duration-200;
+  }
+
+  .input-label {
+    @apply block font-mono text-eyebrow uppercase text-ink-600 mb-2;
+  }
+
+  /* ---------- Card ---------- */
+  .card {
+    @apply bg-white border border-ink-200 rounded-sm transition-all duration-300;
+  }
+  .card-hover {
+    @apply card hover:border-ink-900 hover:-translate-y-1 hover:shadow-soft-lg cursor-pointer;
+  }
+
+  /* ---------- Divider editorial ---------- */
+  .divider-editorial {
+    @apply relative h-px bg-ink-200;
+  }
+  .divider-editorial::before {
+    content: '';
+    @apply absolute left-0 top-0 h-px w-12 bg-ink-900;
+  }
+
+  /* ---------- Badge ---------- */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest
+           border border-ink-300 text-ink-700 rounded-sm;
+  }
+  .badge-accent {
+    @apply badge bg-flame-500 border-flame-500 text-ink-900;
+  }
+  .badge-live {
+    @apply badge bg-ink-900 border-ink-900 text-ink-50;
+  }
+
+  /* ---------- Grid background utility ---------- */
+  .bg-grid-paper {
+    background-image:
+      linear-gradient(rgba(15,15,13,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,15,13,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* ---------- Number tabular ---------- */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Shimmer loading ---------- */
+  .shimmer {
+    background: linear-gradient(90deg, #F4F3EE 0%, #E8E6DC 50%, #F4F3EE 100%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s linear infinite;
+  }
+}
+
+@layer utilities {
+  /* Text balance for headings */
+  .text-balance { text-wrap: balance; }
+  .text-pretty  { text-wrap: pretty; }
+
+  /* Animation delay helpers */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-700 { animation-delay: 700ms; }
+
+  /* Mask gradient — untuk fade marquee */
+  .mask-fade-x {
+    mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+  }
+}
