@@ -51,6 +51,7 @@ const QuizRoom = () => {
   const [players, setPlayers]         = useState([])
   const [finalResult, setFinalResult] = useState(null)
   const submitTimeRef = useRef(null)
+  const phaseRef = useRef('lobby')
 
   const sessionInfo = location.state?.session
   const nickname    = location.state?.nickname || user?.username || 'Anonim'
@@ -64,6 +65,10 @@ const QuizRoom = () => {
   // ============================================================
   // SOCKET CONNECTION & EVENT HANDLERS
   // ============================================================
+  useEffect(() => {
+    phaseRef.current = phase
+  }, [phase])
+
   useEffect(() => {
     const socket = connectSocket(token)
     const joinCode = location.state?.pin
@@ -104,7 +109,10 @@ const QuizRoom = () => {
         rank: p.current_rank,
       })))
       setPlayers(list.map((p, i) => ({ id: i, nickname: p.player_nickname })))
-      setPhase('leaderboard')
+      // Jangan paksa pindah ke leaderboard saat masih lobby (join awal).
+      if (phaseRef.current !== 'lobby') {
+        setPhase('leaderboard')
+      }
     })
 
     return () => {

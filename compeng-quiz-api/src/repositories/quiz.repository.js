@@ -2,9 +2,24 @@ const pool = require('../config/database');
 
 async function findAllByCreator(creatorId) {
   const [rows] = await pool.execute(
-    `SELECT uuid, title, description, is_public, created_at
-     FROM quizzes WHERE creator_id = ? AND deleted_at IS NULL
-     ORDER BY created_at DESC`, [creatorId]);
+    `SELECT
+        q.uuid,
+        q.title,
+        q.description,
+        q.is_public,
+        q.created_at,
+        COUNT(DISTINCT ques.id) AS question_count,
+        COUNT(DISTINCT qs.id)   AS session_count,
+        COUNT(DISTINCT sp.id)   AS total_players
+     FROM quizzes q
+     LEFT JOIN questions ques ON ques.quiz_id = q.id
+     LEFT JOIN quiz_sessions qs ON qs.quiz_id = q.id
+     LEFT JOIN session_participants sp ON sp.session_id = qs.id
+     WHERE q.creator_id = ? AND q.deleted_at IS NULL
+     GROUP BY q.id
+     ORDER BY q.created_at DESC`,
+    [creatorId]
+  );
   return rows;
 }
 
