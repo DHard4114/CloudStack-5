@@ -83,6 +83,9 @@ async function submitAnswer(req, res, next) {
     // Push leaderboard real-time (non-blocking)
     const joinCode = await sessionRepo.findJoinCodeByUuid(req.params.sessionUuid);
     if (joinCode) {
+      const submitted = await sessionRepo.countAnswersForQuestion(req.params.sessionUuid, question_uuid);
+      const total = await sessionRepo.countParticipantsBySessionUuid(req.params.sessionUuid);
+      req.app.get('io').to(`session:${joinCode}`).emit('host:answer_submitted', { submitted, total });
       const { pushLeaderboard } = require('../socket/gameSocket');
       pushLeaderboard(req.app.get('io'), joinCode).catch(console.error);
     }

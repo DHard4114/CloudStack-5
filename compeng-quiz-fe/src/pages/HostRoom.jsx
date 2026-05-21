@@ -83,7 +83,15 @@ const HostRoom = () => {
       setCurrentQuestion(data.question)
       setQuestionIdx(data.index || 1)
       setTotalQuestions(data.total || totalQuestions)
+      setAnswerStats({ submitted: 0, total: players.length })
       setPhase('question')
+    })
+
+    socket.on('host:answer_submitted', (data) => {
+      setAnswerStats((prev) => ({
+        submitted: data?.submitted || 0,
+        total: data?.total || prev.total || players.length,
+      }))
     })
 
     socket.on('host:session_ended', () => {
@@ -100,6 +108,7 @@ const HostRoom = () => {
       socket.off('host:question_started')
       socket.off('host:session_ended')
       socket.off('host:session_error')
+      socket.off('host:answer_submitted')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uuid, token, session, location.state])

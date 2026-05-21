@@ -126,9 +126,33 @@ async function findSessionWithQuizByUuid(sessionUuid) {
   return rows[0] || null;
 }
 
+async function countAnswersForQuestion(sessionUuid, questionUuid) {
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS total
+     FROM participant_answers pa
+     JOIN session_participants sp ON sp.id = pa.participant_id
+     JOIN quiz_sessions qs ON qs.id = sp.session_id
+     JOIN questions q ON q.id = pa.question_id
+     WHERE qs.uuid = ? AND q.uuid = ?`,
+    [sessionUuid, questionUuid]
+  );
+  return rows[0]?.total || 0;
+}
+
+async function countParticipantsBySessionUuid(sessionUuid) {
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS total
+     FROM session_participants sp
+     JOIN quiz_sessions qs ON qs.id = sp.session_id
+     WHERE qs.uuid = ?`,
+    [sessionUuid]
+  );
+  return rows[0]?.total || 0;
+}
+
 module.exports = {
   findActiveByJoinCode, findByUuidAndHost, findJoinCodeByUuid, isPinInUse,
   createSession, startSession, countParticipants, findParticipantByUser, findParticipantByNickname,
   createParticipant, getLeaderboard, createAnswer, finalizeSession,
-  findSessionWithQuizByUuid,
+  findSessionWithQuizByUuid, countAnswersForQuestion, countParticipantsBySessionUuid,
 };
