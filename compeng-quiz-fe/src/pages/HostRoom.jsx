@@ -117,7 +117,9 @@ const HostRoom = () => {
       if (joinCode) getSocket()?.emit('request-leaderboard', { join_code: joinCode })
       getSocket()?.emit('host:start_session', { session_uuid: uuid })
       toast.success('Sesi dimulai')
-    } catch {}
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memulai sesi')
+    }
   }
 
   const onNext = async () => {

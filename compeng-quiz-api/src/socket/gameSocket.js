@@ -19,6 +19,13 @@ function normalizeOptions(raw) {
   return [];
 }
 
+function findLiveStateByJoinCode(joinCode) {
+  for (const [, state] of liveStateBySession) {
+    if (state?.join_code === joinCode) return state;
+  }
+  return null;
+}
+
 function initGameSocket(io) {
   io.on('connection', (socket) => {
     console.log(`[WS] Connected: ${socket.id}`);
@@ -27,6 +34,19 @@ function initGameSocket(io) {
       if (!join_code) return;
       socket.join(`session:${join_code}`);
       await pushLeaderboard(io, join_code);
+
+      // If player joins after session already started, send current live question.
+      const liveState = findLiveStateByJoinCode(join_code);
+      if (liveState && Array.isArray(liveState.questions)) {
+        const question = liveState.questions[liveState.index];
+        if (question) {
+          socket.emit('session:question', {
+            question,
+            index: liveState.index + 1,
+            total: liveState.questions.length,
+          });
+        }
+      }
     });
 
     socket.on('request-leaderboard', async ({ join_code }) => {
@@ -72,10 +92,11 @@ function initGameSocket(io) {
             })
             .filter((q) => q.uuid && q.text && q.options.length >= 2);
 
-          state = { questions, index: 0 };
+          state = { questions, index: 0, join_code: sess.join_code };
           liveStateBySession.set(session_uuid, state);
         } else {
           state.index = 0;
+          state.join_code = sess.join_code;
         }
 
         const question = state.questions[state.index];
