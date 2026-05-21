@@ -78,6 +78,11 @@ QuizLive adalah platform kuis interaktif yang dirancang untuk mendukung pembelaj
 
 ## Arsitektur Sistem
 
+
+
+![Diagram Arsitektur](https://hackmd.io/_uploads/rkX57mhkGe.png)
+
+
 ```mermaid
 flowchart TB
     subgraph EXT["External Client"]
