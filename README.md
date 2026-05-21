@@ -64,12 +64,12 @@ QuizLive adalah platform kuis interaktif yang dirancang untuk mendukung pembelaj
 
 | Nama | NPM | Peran |
 |------|-----|-------|
-| **Daffa Hardhan** | `2106XXXXXX` | Cloud Architect & Backend Lead |
+| **Daffa Hardhan** | `2306161763` | Cloud Architect & Backend Lead |
 | **[Nama Anggota 2]** | `2106XXXXXX` | Frontend & UI/UX |
 | **[Nama Anggota 3]** | `2106XXXXXX` | DevOps & Infrastructure |
 | **[Nama Anggota 4]** | `2106XXXXXX` | Database & API Engineer |
 
-**Dosen Pengampu:** [Nama Dosen]
+**Dosen Pengampu:** Yan Maraden, S.T., M.T., M.Sc
 **Mata Kuliah:** Komputasi Awan
 **Program Studi:** Teknik Komputer, Fakultas Teknik, Universitas Indonesia
 **Semester:** Genap 2025/2026
@@ -126,9 +126,9 @@ sequenceDiagram
     U->>FE: Buka aplikasi
     FE->>VR: HTTP/WS Request
     VR->>API: DNAT → 10.1.1.230:3000
-    API->>DB: Query
+    API->>DB: Query   
     DB-->>API: Result
-    API-->>VR: Response
+    API-->>VR: Response       
     VR-->>FE: Response
     FE-->>U: Render UI
 ```
@@ -236,6 +236,11 @@ Settings → Network:
 ```powershell
 cd "C:\Program Files\Oracle\VirtualBox"
 .\VBoxManage modifyvm "CloudStack-Host" --nested-hw-virt on
+
+echo "options kvm_intel nested=1" | sudo tee /etc/modprobe.d/kvm.conf
+sudo modprobe -r kvm_intel
+sudo modprobe kvm_intel nested=1
+cat /sys/module/kvm_intel/parameters/nested # harus Y 
 ```
 
 **2.4 Instalasi Ubuntu**
@@ -373,6 +378,8 @@ sudo systemctl restart mysql && sudo systemctl enable mysql
 sudo apt install -y cloudstack-management cloudstack-agent
 ```
 
+jika koneksi internet lambat, dapat mengunduh file .deb dari Windows lalu install menggunakan dpkg -i.
+
 **4.4 Setup database CloudStack**
 
 ```bash
@@ -459,6 +466,12 @@ showmount -e localhost
 
 ![NFS Export](docs/images/phase5-nfs-export.png)
 
+**5.5 Download System VM Template**
+
+```bash
+sudo /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m /export/secondary -u http://download.cloudstack.org/systemvm/4.18/systemvmtemplate-4.18.0-kvm.qcow2.bz2 -h kvm -F
+```
+
 ---
 
 ## Phase 6 — Konfigurasi Infrastruktur CloudStack
@@ -526,7 +539,7 @@ sudo systemctl restart sshd
 
 | Storage | Protocol | Server | Path |
 |---------|----------|--------|------|
-| Primary | NFS | `192.168.101.220` | `/export/primary` |
+| Primary | SharedMountPoint | `192.168.101.220` | `/var/lib/libvirt/images` |
 | Secondary | NFS | `192.168.101.220` | `/export/secondary` |
 
 Setelah Zone berhasil dibuat → **Launch Zone** → tunggu System VM (SSVM, CPVM) deploy otomatis (~5–10 menit).
@@ -562,7 +575,7 @@ Tunggu status berubah dari `Not Ready` → `Ready`.
 | CPU MHz | `1000` |
 | Memory | `1024 MB` |
 | Network Rate | `200 Mbps` |
-| Storage Type | Shared |
+| Storage Type | Local |
 
 ![Compute Offering](docs/images/phase6-compute-offering.png)
 
@@ -623,7 +636,7 @@ Klik instance `quizlive-db-vm` → klik **View Console** → window VNC terbuka 
 |---------|-------|
 | Hostname | `quizlive-db-vm` |
 | Username | `ubuntu` |
-| Network | Manual: `10.1.1.230/24`, gateway `10.1.1.1`, DNS `8.8.8.8` |
+| Network | Automatic (DHCP): `10.1.1.x/24`, gateway `10.1.1.1`, DNS `8.8.8.8` |
 | Storage | Use entire disk + LVM |
 | OpenSSH | ✅ |
 
@@ -689,8 +702,8 @@ sudo systemctl restart mysql
 ```bash
 cd ~
 git clone https://github.com/DHard4114/CloudStack-5.git
-cd CloudStack-5/compeng-quiz-api
-npm install
+cd CloudStack-5/compeng-quiz-api # Untuk setting backend
+cd ../compeng-quiz-fe # Untuk setting frontend
 ```
 
 **9.4 Konfigurasi environment**
@@ -709,18 +722,17 @@ DB_PORT=3306
 DB_USER=quiz_api_worker
 DB_PASSWORD=CompEng!QuizSecured@2026
 DB_NAME=enterprise_quizapp
+DB_CONNECTION_LIMIT=20
 
-JWT_SECRET=compeng-quiz-secret-key-2026
+JWT_SECRET=rahasiabanget2026gantidenganstringrandompanjang
 JWT_EXPIRES_IN=24h
 BCRYPT_ROUNDS=12
-
-CORS_ORIGIN=http://localhost:5173,http://192.168.101.102:5173
 ```
 
 **9.5 Initialize schema**
 
 ```bash
-mysql -u quiz_api_worker -p enterprise_quizapp < ./db/schema.sql
+mysql -u quiz_api_worker -p enterprise_quizapp < /path/to/quizapp.sql
 ```
 
 **9.6 Start dengan PM2**
@@ -806,9 +818,9 @@ curl http://192.168.101.232:3000/socket.io/
 Frontend dijalankan di **Windows host**.
 
 ```bash
-git clone https://github.com/DHard4114/quizlive-frontend.git
-cd quizlive-frontend
-npm install
+git clone https://github.com/DHard4114/CloudStack-5.git
+cd CloudStack-5/compeng-quiz-api # Untuk setting backend
+cd ../compeng-quiz-fe # Untuk setting frontend
 
 cp .env.example .env
 # Edit .env:
