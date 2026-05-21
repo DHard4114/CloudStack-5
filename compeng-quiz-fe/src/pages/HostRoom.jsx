@@ -42,6 +42,7 @@ const HostRoom = () => {
   useEffect(() => {
     const socket = connectSocket(token)
     const joinCode = session?.join_code || location.state?.pin
+    socket.emit('host:join', { session_uuid: uuid })
 
     // Disabled sementara: backend socket saat ini hanya support:
     // - join-session
@@ -64,14 +65,41 @@ const HostRoom = () => {
 
     socket.on('leaderboard-update', (data) => {
       const list = data?.leaderboard || []
-      setLeaderboard(list)
+      setLeaderboard(list.map((p) => ({
+        nickname: p.player_nickname,
+        score: p.total_score,
+        rank: p.current_rank,
+      })))
       setPlayers(list.map((p, i) => ({ id: i, nickname: p.player_nickname, score: p.total_score })))
       setAnswerStats((prev) => ({ ...prev, total: list.length }))
-      setPhase('leaderboard')
+    })
+
+    socket.on('host:session_info', (data) => {
+      setSession((prev) => ({ ...(prev || {}), ...data }))
+      setTotalQuestions(data.total_questions || 0)
+    })
+
+    socket.on('host:question_started', (data) => {
+      setCurrentQuestion(data.question)
+      setQuestionIdx(data.index || 1)
+      setTotalQuestions(data.total || totalQuestions)
+      setPhase('question')
+    })
+
+    socket.on('host:session_ended', () => {
+      setPhase('finished')
+    })
+
+    socket.on('host:session_error', (err) => {
+      toast.error(err?.message || 'Gagal memulai sesi live')
     })
 
     return () => {
       socket.off('leaderboard-update')
+      socket.off('host:session_info')
+      socket.off('host:question_started')
+      socket.off('host:session_ended')
+      socket.off('host:session_error')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uuid, token, session, location.state])
@@ -87,8 +115,7 @@ const HostRoom = () => {
       await sessionService.start(uuid)
       const joinCode = session?.join_code || location.state?.pin
       if (joinCode) getSocket()?.emit('request-leaderboard', { join_code: joinCode })
-      // Disabled sementara (backend belum support event ini):
-      // getSocket()?.emit('host:start_session', { session_uuid: uuid })
+      getSocket()?.emit('host:start_session', { session_uuid: uuid })
       toast.success('Sesi dimulai')
     } catch {}
   }
@@ -97,6 +124,7 @@ const HostRoom = () => {
     try {
       const joinCode = session?.join_code || location.state?.pin
       if (joinCode) getSocket()?.emit('request-leaderboard', { join_code: joinCode })
+      getSocket()?.emit('host:next_question', { session_uuid: uuid })
     } catch {}
   }
 
@@ -104,6 +132,7 @@ const HostRoom = () => {
     if (!confirm('Akhiri sesi sekarang?')) return
     try {
       await sessionService.finish(uuid)
+      getSocket()?.emit('host:end_session', { session_uuid: uuid })
       disconnectSocket()
       toast.success('Sesi berakhir')
       setTimeout(() => navigate('/dashboard'), 1500)

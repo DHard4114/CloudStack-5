@@ -50,7 +50,7 @@ const Navbar = () => {
           <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <NavLink
-                key={link.to}
+                key={`${link.to}-${link.label}`}
                 to={link.to}
                 className={({ isActive }) => cn(
                   'px-4 py-2 text-sm font-medium tracking-tight rounded-sm transition-all',
@@ -142,7 +142,7 @@ const Navbar = () => {
           <div className="container-editorial py-3 flex flex-col gap-1">
             {navLinks.map((link) => (
               <NavLink
-                key={link.to}
+                key={`${link.to}-${link.label}`}
                 to={link.to}
                 onClick={() => setOpen(false)}
                 className={({ isActive }) => cn(

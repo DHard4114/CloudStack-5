@@ -77,6 +77,25 @@ const QuizRoom = () => {
       socket.emit('request-leaderboard', { join_code: joinCode })
     }
 
+    socket.on('session:question', (data) => {
+      const q = data?.question
+      if (!q) return
+      setQuestion(q)
+      setQuestionIdx(data?.index || 1)
+      setTotalQuestions(data?.total || 0)
+      setSelected(null)
+      setRevealed(null)
+      setPhase('question')
+      submitTimeRef.current = Date.now()
+      reset(q.time_limit || 30)
+      setTimeout(() => start(q.time_limit || 30), 100)
+    })
+
+    socket.on('session:end', (data) => {
+      setFinalResult(data || null)
+      setPhase('finished')
+    })
+
     socket.on('leaderboard-update', (data) => {
       const list = data?.leaderboard || []
       setLeaderboard(list.map((p) => ({
@@ -89,6 +108,8 @@ const QuizRoom = () => {
     })
 
     return () => {
+      socket.off('session:question')
+      socket.off('session:end')
       socket.off('leaderboard-update')
       // Note: tidak disconnect socket di unmount karena bisa dipakai di tempat lain
     }

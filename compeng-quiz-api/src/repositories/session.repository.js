@@ -100,8 +100,21 @@ async function finalizeSession(sessionId) {
   await pool.execute(`CALL sp_finalize_session(?)`, [sessionId]);
 }
 
+async function findSessionWithQuizByUuid(sessionUuid) {
+  const [rows] = await pool.execute(
+    `SELECT qs.id, qs.uuid AS session_uuid, qs.join_code, qs.status,
+            q.id AS quiz_id, q.uuid AS quiz_uuid, q.title AS quiz_title
+     FROM quiz_sessions qs
+     JOIN quizzes q ON q.id = qs.quiz_id
+     WHERE qs.uuid = ?`,
+    [sessionUuid]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   findActiveByJoinCode, findByUuidAndHost, findJoinCodeByUuid, isPinInUse,
   createSession, startSession, countParticipants, findParticipant,
   createParticipant, getLeaderboard, createAnswer, finalizeSession,
+  findSessionWithQuizByUuid,
 };
