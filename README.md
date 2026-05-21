@@ -75,13 +75,12 @@ QuizLive adalah platform kuis interaktif yang dirancang untuk mendukung pembelaj
 **Semester:** Genap 2025/2026
 
 ---
-
-## Arsitektur Sistem
-
-
+## Diagram Cloudstack
 
 ![Diagram Arsitektur](https://hackmd.io/_uploads/rkX57mhkGe.png)
 
+
+## Arsitektur Sistem
 
 ```mermaid
 flowchart TB
