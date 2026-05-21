@@ -47,13 +47,27 @@ async function countParticipants(sessionId) {
   return rows[0].total;
 }
 
-async function findParticipant(sessionUuid, userId) {
+async function findParticipantByUser(sessionUuid, userId) {
+  if (!userId) return null;
   const [rows] = await pool.execute(
     `SELECT sp.id AS participant_id
      FROM session_participants sp
      JOIN quiz_sessions qs ON qs.id = sp.session_id
      WHERE qs.uuid = ? AND sp.user_id = ? AND qs.status = 'in_progress'`,
-    [sessionUuid, userId]);
+    [sessionUuid, userId]
+  );
+  return rows[0] || null;
+}
+
+async function findParticipantByNickname(sessionUuid, playerNickname) {
+  if (!playerNickname) return null;
+  const [rows] = await pool.execute(
+    `SELECT sp.id AS participant_id
+     FROM session_participants sp
+     JOIN quiz_sessions qs ON qs.id = sp.session_id
+     WHERE qs.uuid = ? AND sp.player_nickname = ? AND qs.status = 'in_progress'`,
+    [sessionUuid, playerNickname]
+  );
   return rows[0] || null;
 }
 
@@ -114,7 +128,7 @@ async function findSessionWithQuizByUuid(sessionUuid) {
 
 module.exports = {
   findActiveByJoinCode, findByUuidAndHost, findJoinCodeByUuid, isPinInUse,
-  createSession, startSession, countParticipants, findParticipant,
+  createSession, startSession, countParticipants, findParticipantByUser, findParticipantByNickname,
   createParticipant, getLeaderboard, createAnswer, finalizeSession,
   findSessionWithQuizByUuid,
 };

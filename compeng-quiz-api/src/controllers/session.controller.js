@@ -59,11 +59,14 @@ async function joinSession(req, res, next) {
 
 async function submitAnswer(req, res, next) {
   try {
-    const { question_uuid, selected_option_id, time_taken_ms } = req.body;
+    const { question_uuid, selected_option_id, time_taken_ms, player_nickname } = req.body;
     if (!question_uuid || !selected_option_id || time_taken_ms === undefined)
       return R.badRequest(res, 'question_uuid, selected_option_id, time_taken_ms wajib diisi.');
 
-    const participant = await sessionRepo.findParticipant(req.params.sessionUuid, req.user.id);
+    let participant = await sessionRepo.findParticipantByUser(req.params.sessionUuid, req.user?.id);
+    if (!participant) {
+      participant = await sessionRepo.findParticipantByNickname(req.params.sessionUuid, player_nickname);
+    }
     if (!participant) return R.notFound(res, 'Bukan peserta sesi ini atau sesi belum dimulai.');
 
     const q = await quizRepo.findQuestionWithOption(question_uuid, selected_option_id);

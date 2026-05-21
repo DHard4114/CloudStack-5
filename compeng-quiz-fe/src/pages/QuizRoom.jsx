@@ -109,10 +109,7 @@ const QuizRoom = () => {
         rank: p.current_rank,
       })))
       setPlayers(list.map((p, i) => ({ id: i, nickname: p.player_nickname })))
-      // Jangan paksa pindah ke leaderboard saat masih lobby (join awal).
-      if (phaseRef.current !== 'lobby') {
-        setPhase('leaderboard')
-      }
+      // Keep data synced without overriding active question UI.
     })
 
     return () => {
@@ -156,9 +153,8 @@ const QuizRoom = () => {
         question_uuid: question.uuid || question.id,
         selected_option_id: selectedOptionId,
         time_taken_ms: timeTakenMs,
+        player_nickname: nickname,
       })
-      const joinCode = location.state?.pin
-      if (joinCode) getSocket()?.emit('request-leaderboard', { join_code: joinCode })
     } catch {
       // ignored
     }

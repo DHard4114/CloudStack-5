@@ -7,7 +7,7 @@ const router = express.Router();
 router.post  ('/',                    requireAuth, requireTeacher, controller.openSession);
 router.post  ('/join',                joinLimiter,                controller.joinSession);
 router.post  ('/:sessionUuid/start',  requireAuth, requireTeacher, controller.startSession);
-router.post  ('/:sessionUuid/answer', requireAuth,                controller.submitAnswer);
+router.post  ('/:sessionUuid/answer',                            controller.submitAnswer);
 router.patch ('/:sessionUuid/finish', requireAuth, requireTeacher, controller.finishSession);
 
 module.exports = router;
