@@ -37,12 +37,14 @@ function initGameSocket(io) {
       if (!session_uuid) return;
       const sess = await sessionRepo.findSessionWithQuizByUuid(session_uuid);
       if (!sess) return;
+      const questionRows = await quizRepo.findQuestionsByQuizId(sess.quiz_id);
+      const totalQuestions = Array.isArray(questionRows) ? questionRows.length : 0;
       socket.join(`session:${sess.join_code}`);
       socket.emit('host:session_info', {
         session_uuid: sess.session_uuid,
         quiz_title: sess.quiz_title,
         join_code: sess.join_code,
-        total_questions: liveStateBySession.get(session_uuid)?.questions?.length || 0,
+        total_questions: totalQuestions,
       });
       await pushLeaderboard(io, sess.join_code);
     });
