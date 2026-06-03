@@ -65,14 +65,14 @@ QuizLive adalah platform kuis interaktif yang dirancang untuk mendukung pembelaj
 | Nama | NPM | Peran |
 |------|-----|-------|
 | **Daffa Hardhan** | `2306161763` | Ideation Lead & Core Infrastructure Architect |
-| **Alexander Christhian** | `2306267025` | Frontend Developer & UI/UX |
+| **Alexander Christhian** | `2306267025` | Database Administrator & Backend |
 | **Arsinta Kirana Nisa** | `2306215980` | Frontend Developer & UI/UX |
-| **Achmad Zaidan Lazuardy** | `2206059793` | Backend Engineer & VM Deployment |
-| **Wiellona Darlene Oderia Saragih** | `2306264396` | Database Administrator & Backend |
+| **Wiellona Darlene Oderia Saragih** | `2306264396` | Frontend Developer & UI/UX |
 | **Muhammad Hilmi Al Muttaqi** | `2306267082` | Virtual Network & Security Engineer |
 | **Laura Fawzia Sambowo** | `2306260145` | Storage (NFS) & Virtualization Specialist |
 | **Jeremy Wijanarko Mulyono** | `2306267132` | CloudStack Administrator & System Ops |
-| **Falah Andhesryo** | `2306161990` | Technical Writer & Testing |
+| **Falah Andhesryo** | `2306161990` | Backend Engineer & VM Deployment |
+| **Achmad Zaidan Lazuardy** | `2206059793` | Technical Writer & Testing|
 
 **Dosen Pengampu:** Yan Maraden, S.T., M.T., M.Sc
 **Mata Kuliah:** Komputasi Awan
@@ -280,7 +280,7 @@ sudo apt install -y vim curl wget net-tools bridge-utils \
 ip addr show
 ```
 
-Catat nama interface bridged (mis. `enp0s3`) dan NAT (mis. `enp0s8`).
+Catat nama interface bridged (mis. `enp0s3`).
 
 **3.2 Konfigurasi bridge**
 
@@ -295,7 +295,6 @@ network:
   ethernets:
     enp0s3:
       dhcp4: false
-      dhcp6: false
   bridges:
     cloudbr0:
       interfaces: [enp0s3]
@@ -311,25 +310,21 @@ network:
         forward-delay: 0
 ```
 
-**3.3 Konfigurasi NAT untuk internet VM**
+**3.3 Konfigurasi antarmuka dasar Cloud-Init**
 
 ```bash
-sudo vim /etc/netplan/99-nat.yaml
+sudo vim /etc/netplan/50-cloud-init.yaml
 ```
 
 ```yaml
 network:
   version: 2
   ethernets:
-    enp0s8:
+    enp0s3:
       dhcp4: true
-      routes:
-        - to: default
-          via: 10.0.3.2
-          metric: 100
 ```
 
-> Metric 100 (NAT) lebih rendah dari 200 (bridged) sehingga traffic internet keluar via NAT, sedangkan traffic LAN tetap via `cloudbr0`.
+> **Catatan Penting:** Untuk setup Netplan ini, **hanya digunakan file `00-installer-config.yaml` dan `50-cloud-init.yaml`**. File `99-nat.yaml` sengaja dinonaktifkan (di-comment out) karena internet VM dan server Ubuntu Host secara penuh menggunakan alur bridge `cloudbr0` ke router fisik, guna menghindari rute routing yang bentrok.
 
 **3.4 Apply**
 
@@ -1112,15 +1107,11 @@ VBoxManage startvm "CloudStack-Host" --type headless
 
 ## Struktur Repository
 
-```
+```text
 QuizLive-CloudStack/
 ├── README.md
 ├── LICENSE
 ├── docs/
-│   ├── images/
-│   │   ├── banner.png
-│   │   ├── network-topology.png
-│   │   └── phase[1-12]-*.png
 │   ├── MASTER_LOGBOOK.md
 |   ├── SETUP_ISO_LOCAL.md
 │   └── API_DOCUMENTATION.md
@@ -1207,7 +1198,7 @@ cloudflared tunnel route dns quizlive-tunnel api.quizlive.example.com
 ## Lisensi
 
 MIT License — © 2026 Daffa Hardhan & QuizLive Team
-Departemen Teknik Komputer, Fakultas Teknik, Universitas Indonesia
+Departemen Teknik Elektro, Fakultas Teknik, Universitas Indonesia
 
 ---
 

@@ -1,0 +1,11 @@
+{
+  "public_ip": "192.168.101.232",
+  "firewall_rules": [
+    { "source_cidr": "0.0.0.0/0", "protocol": "TCP", "start_port": 3000, "end_port": 3000 },
+    { "source_cidr": "0.0.0.0/0", "protocol": "TCP", "start_port": 2222, "end_port": 2222 }
+  ],
+  "port_forwarding_rules": [
+    { "public_port": 2222, "private_ip": "10.1.1.230", "private_port": 22, "protocol": "TCP", "purpose": "SSH to VM" },
+    { "public_port": 3000, "private_ip": "10.1.1.230", "private_port": 3000, "protocol": "TCP", "purpose": "Express API Engine" }
+  ]
+}

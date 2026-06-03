@@ -1,0 +1,22 @@
+# Salinan konfigurasi /etc/cloudstack/agent/agent.properties
+# Diambil dari host Ubuntu Server (CloudStack)
+#Storage
+#Wed Jun 03 10:18:30 UTC 2026
+cluster=1
+pod=1
+resource=com.cloud.hypervisor.kvm.resource.LibvirtComputingResource
+private.network.device=cloudbr0
+domr.scripts.dir=scripts/network/domr/kvm
+guest.network.device=cloudbr0
+keystore.passphrase=T2yEF54KCB39Y3MK
+hypervisor.type=kvm
+port=8250
+zone=1
+public.network.device=cloudbr0
+local.storage.uuid=e232331e-b5b6-4d07-bc26-ab74535e1c03
+host=192.168.101.220@static
+guid=ccbd4d1e-e302-3021-93e4-2b491930dc83
+LibvirtComputingResource.id=1
+workers=5
+iscsi.session.cleanup.enabled=false
+vm.migrate.wait=3600

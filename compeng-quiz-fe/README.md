@@ -1,6 +1,6 @@
 # QuizLive CompEng — Frontend
 
-> **Editorial Tech Brutalism** — Real-time quiz platform untuk pendidikan Computer Engineering. 
+> **Editorial Tech Brutalism** — Real-time quiz platform untuk pendidikan Computer Engineering.
 > Frontend Vite + React + TailwindCSS yang terhubung ke backend Node.js + Express + Socket.IO yang berjalan di dalam **isolated network CloudStack** melalui Virtual Router NAT.
 
 ```
@@ -13,7 +13,22 @@
 
 ---
 
-## ✨ Fitur
+## Daftar Isi
+
+- [Fitur](#fitur)
+- [Quick Start](#quick-start)
+- [Struktur Direktori](#struktur-direktori)
+- [Rute Aplikasi](#rute-aplikasi)
+- [Integrasi Backend](#integrasi-backend)
+- [Design System](#design-system)
+- [Troubleshooting](#troubleshooting)
+- [Scripts](#scripts)
+- [Tech Stack](#tech-stack)
+- [Lisensi & Catatan](#lisensi--catatan)
+
+---
+
+## Fitur
 
 - **Editorial Tech Brutalism** design system — warm monochrome + amber accent, Fraunces display serif + Geist sans + JetBrains Mono.
 - **JWT Auth** dengan persistensi `localStorage` (auto-logout pada 401).
@@ -26,7 +41,7 @@
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install dependencies
 
@@ -68,10 +83,10 @@ npm run preview
 
 ---
 
-## 🗂 Struktur Direktori
+## Struktur Direktori
 
 ```
-quizlive-frontend/
+compeng-quiz-fe/
 ├── .env                         # konfigurasi runtime (tidak di-commit)
 ├── .env.example                 # template environment
 ├── index.html                   # entry HTML + Google Fonts
@@ -116,7 +131,7 @@ quizlive-frontend/
 
 ---
 
-## 🛣 Rute Aplikasi
+## Rute Aplikasi
 
 | Path                     | Akses                | Komponen      |
 |--------------------------|----------------------|---------------|
@@ -132,7 +147,7 @@ quizlive-frontend/
 
 ---
 
-## 🔌 Integrasi Backend
+## Integrasi Backend
 
 Frontend ini berasumsi backend mengexpose endpoint berikut (sudah teruji pada deployment CloudStack):
 
@@ -171,7 +186,7 @@ Koneksi pada URL yang sama dengan REST (`VITE_SOCKET_URL`).
 
 ---
 
-## 🎨 Design System
+## Design System
 
 ### Palette
 
@@ -203,9 +218,9 @@ Lihat `src/index.css`:
 
 ---
 
-## 🛠 Troubleshooting
+## Troubleshooting
 
-### ❌ CORS error di browser console
+### CORS error di browser console
 
 Pastikan backend mengaktifkan CORS untuk origin `http://localhost:5173`. Di Express:
 
@@ -216,7 +231,7 @@ app.use(cors({
 }))
 ```
 
-### ❌ `ERR_CONNECTION_REFUSED` ke `192.168.101.232:3000`
+### ERR_CONNECTION_REFUSED ke `192.168.101.232:3000`
 
 Verifikasi dari Windows host:
 
@@ -228,23 +243,23 @@ Jika gagal:
 1. Pastikan VM `quizlive-db-vm` (10.1.1.230) menyala dan PM2 `quizlive-api` berjalan (`pm2 list`).
 2. Verifikasi port forwarding di CloudStack dashboard: `192.168.101.232:3000 → 10.1.1.230:3000` TCP.
 3. Periksa firewall ACL di network `QuizLive-Isolated-OK`.
-4. Reboot Virtual Router jika perlu (dari CloudStack: Infrastructure → Virtual Routers).
+4. Reboot Virtual Router jika perlu (CloudStack: Infrastructure → Virtual Routers).
 
-### ❌ Socket.IO tidak connect
+### Socket.IO tidak connect
 
 Buka DevTools → Network → WS. Pastikan handshake `polling` lalu `websocket` ke `/socket.io/` berhasil. Jika hanya polling yang jalan, kemungkinan ada proxy/firewall yang strip WebSocket upgrade.
 
-### ❌ Login berhasil tapi tidak redirect
+### Login berhasil tapi tidak redirect
 
 Periksa shape response backend. AuthContext fleksibel terhadap `{data: {token, user}}` atau `{token, user}`, tapi `user.role` harus ada (`teacher` / `admin` / `student`, case-insensitive).
 
-### ❌ Halaman blank setelah build
+### Halaman blank setelah build
 
 Vite menggunakan history API; pastikan production server me-rewrite semua route ke `index.html`. Untuk preview lokal cukup `npm run preview`.
 
 ---
 
-## 📦 Scripts
+## Scripts
 
 ```bash
 npm run dev       # development server (Vite, port 5173, host 0.0.0.0)
@@ -255,7 +270,7 @@ npm run lint      # opsional: jika ESLint sudah di-setup
 
 ---
 
-## 🧬 Tech Stack
+## Tech Stack
 
 - **Vite 5** — bundler & dev server
 - **React 18** — UI library (concurrent root)
@@ -270,7 +285,7 @@ npm run lint      # opsional: jika ESLint sudah di-setup
 
 ---
 
-## 📝 Lisensi & Catatan
+## Lisensi & Catatan
 
 Proyek tugas akademik — **QuizLive CompEng** — Computer Engineering / Cloud Computing.
 
@@ -278,4 +293,4 @@ Backend, infrastruktur CloudStack, port forwarding, dan deployment PM2 dibangun 
 
 ---
 
-**Build status**: ✅ Ready · **Design system**: Editorial Tech Brutalism · **Version**: 1.0.0
+**Build status**: Ready · **Design system**: Editorial Tech Brutalism · **Version**: 1.0.0
