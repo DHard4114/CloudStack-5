@@ -64,10 +64,15 @@ QuizLive adalah platform kuis interaktif yang dirancang untuk mendukung pembelaj
 
 | Nama | NPM | Peran |
 |------|-----|-------|
-| **Daffa Hardhan** | `2306161763` | Cloud Architect & Backend Lead |
-| **[Nama Anggota 2]** | `2106XXXXXX` | Frontend & UI/UX |
-| **[Nama Anggota 3]** | `2106XXXXXX` | DevOps & Infrastructure |
-| **[Nama Anggota 4]** | `2106XXXXXX` | Database & API Engineer |
+| **Daffa Hardhan** | `2306161763` | Ideation Lead & Core Infrastructure Architect |
+| **Alexander Christhian** | `2306267025` | Frontend Developer & UI/UX |
+| **Arsinta Kirana Nisa** | `2306215980` | Frontend Developer & UI/UX |
+| **Achmad Zaidan Lazuardy** | `2206059793` | Backend Engineer & VM Deployment |
+| **Wiellona Darlene Oderia Saragih** | `2306264396` | Database Administrator & Backend |
+| **Muhammad Hilmi Al Muttaqi** | `2306267082` | Virtual Network & Security Engineer |
+| **Laura Fawzia Sambowo** | `2306260145` | Storage (NFS) & Virtualization Specialist |
+| **Jeremy Wijanarko Mulyono** | `2306267132` | CloudStack Administrator & System Ops |
+| **Falah Andhesryo** | `2306161990` | Technical Writer & Testing |
 
 **Dosen Pengampu:** Yan Maraden, S.T., M.T., M.Sc
 **Mata Kuliah:** Komputasi Awan
