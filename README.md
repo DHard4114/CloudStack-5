@@ -710,7 +710,7 @@ Klik instance `quizlive-db-vm` → klik **View Console** → window VNC terbuka 
 | Setting | Value |
 |---------|-------|
 | Hostname | `quizlive-db-vm` |
-| Username | `ubuntu` |
+| Username | `quizlive-db` |
 | Network | Automatic (DHCP): `10.1.1.x/24`, gateway `10.1.1.1`, DNS `8.8.8.8` |
 | Storage | Use entire disk + LVM |
 | OpenSSH | ✅ |
@@ -1318,10 +1318,10 @@ sudo ss -tlnp | grep 3000
 curl http://192.168.101.232:3000/health
 
 # SSH ke VM
-ssh -p 2222 ubuntu@192.168.101.232
+ssh quizlive-db@192.168.101.232 -p 2222
 
 # Copy file ke VM
-scp -P 2222 file.txt ubuntu@192.168.101.232:~/
+scp -P 2222 file.txt quizlive-db@192.168.101.232:~/
 
 # VirtualBox
 VBoxManage list vms
@@ -1368,7 +1368,7 @@ git clone https://github.com/DHard4114/CloudStack-5.git
 cd CloudStack-5/compeng-quiz-api
 npm install
 cp .env.example .env
-mysql -u root -p enterprise_quizapp < src/database/quizapp.sql
+mysql -u quiz_api_worker -p enterprise_quizapp < src/database/quizapp.sql
 pm2 start src/app.js --name quizlive-api
 pm2 save
 ```
