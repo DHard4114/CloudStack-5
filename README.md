@@ -1,6 +1,6 @@
-# QuizLive — Real-Time Engineering Challenge Platform
+﻿# QuizLive Cloud - Implementasi Private Cloud IaaS Berbasis Apache CloudStack dan KVM untuk Platform Kuis Real-Time
 
-> Platform kuis interaktif real-time berbasis cloud privat, dibangun di atas **Apache CloudStack + KVM** sebagai simulasi enterprise data center. Tugas akhir mata kuliah **Komputasi Awan**, Teknik Komputer, Universitas Indonesia.
+> Proyek **QuizLive Cloud** merupakan implementasi lengkap Private Cloud Infrastructure as a Service (IaaS) menggunakan **Apache CloudStack 4.18** dan hypervisor **KVM** yang berjalan di atas **Ubuntu Server 22.04** dengan memanfaatkan nested virtualization pada VirtualBox. Infrastruktur ini dirancang untuk menghosting aplikasi **QuizLive** — sebuah platform kuis interaktif real-time berskala enterprise dengan arsitektur full-stack modern (React + Vite untuk frontend, Node.js + Express + Socket.IO untuk backend, dan MySQL 8.0 sebagai database).
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-blue)](https://mysql.com/)
@@ -16,6 +16,14 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ![Banner](docs/images/banner.png)
+
+---
+
+## Preview
+
+![CloudStack Dashboard](https://hackmd.io/_uploads/BJD01jTlfg.png)
+
+![QuizLive Web](https://hackmd.io/_uploads/SyM-xsalfg.png)
 
 ---
 
@@ -154,7 +162,34 @@ sequenceDiagram
 | Isolated Guest Network | `10.1.1.0/24` | Internal | VM backend: `10.1.1.230` |
 | Gateway LAN | `192.168.101.1` | Fixed | Default gateway fisik |
 
-![Network Topology](docs/images/network-topology.png)
+
+**Topology Jaringan:**
+
+```mermaid
+flowchart TD
+    INET("Internet / Jaringan Fisik")
+
+    subgraph Physical [Lapisan Fisik & Host]
+        direction TB
+        RTR("Router Kampus / WiFi Lab<br/>Gateway Fisik: 192.168.101.1")
+        BR{"Bridge Interface<br/>(cloudbr0)"}
+        HOST("CloudStack Host (Ubuntu)<br/>IP Host: 192.168.101.220")
+    end
+
+    subgraph Virtual [Lapisan Virtual CloudStack]
+        direction TB
+        VR("Virtual Router (VLAN 100)<br/>Public IP: 192.168.101.232<br/>Gateway VM: 10.1.1.1")
+        ISONET(("Isolated Guest Network<br/>10.1.1.0/24"))
+        VM("quizlive-db-vm<br/>IP Privat: 10.1.1.230")
+    end
+
+    INET --> RTR
+    RTR --> BR
+    BR --> HOST
+    HOST --> VR
+    VR -->|Port Forwarding 3000 & 2222| ISONET
+    ISONET --> VM
+```
 
 ---
 
@@ -210,7 +245,7 @@ Buka VirtualBox Manager → `File → Tools → Extension Pack Manager` → Inst
 VBoxManage --version
 ```
 
-![VirtualBox Manager](docs/images/phase1-vbox-manager.png)
+![VirtualBox Manager](https://hackmd.io/_uploads/HyW8WhalMx.png)
 
 ---
 
@@ -238,14 +273,20 @@ Settings → Network:
 | Adapter 1 | Bridged Adapter (pilih interface fisik) | **Allow All** |
 | Adapter 2 | NAT | Default |
 
-![Network Config](docs/images/phase2-network-config.png)
+![Network Config](https://hackmd.io/_uploads/ryP9-nTlMx.png)
 
 **2.3 Enable Nested Virtualization**
+
+Di Windows host:
 
 ```powershell
 cd "C:\Program Files\Oracle\VirtualBox"
 .\VBoxManage modifyvm "CloudStack-Host" --nested-hw-virt on
+```
 
+Di Ubuntu Server host:
+
+```bash
 echo "options kvm_intel nested=1" | sudo tee /etc/modprobe.d/kvm.conf
 sudo modprobe -r kvm_intel
 sudo modprobe kvm_intel nested=1
@@ -310,21 +351,19 @@ network:
         forward-delay: 0
 ```
 
-**3.3 Konfigurasi antarmuka dasar Cloud-Init**
+**3.3 Nonaktifkan konfigurasi network Cloud-Init**
+
+Cloud-init DHCP pada `enp0s3` harus dinonaktifkan agar tidak bentrok dengan bridge `cloudbr0`.
 
 ```bash
-sudo vim /etc/netplan/50-cloud-init.yaml
+sudo vim /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
 ```
 
 ```yaml
-network:
-  version: 2
-  ethernets:
-    enp0s3:
-      dhcp4: true
+network: {config: disabled}
 ```
 
-> **Catatan Penting:** Untuk setup Netplan ini, **hanya digunakan file `00-installer-config.yaml` dan `50-cloud-init.yaml`**. File `99-nat.yaml` sengaja dinonaktifkan (di-comment out) karena internet VM dan server Ubuntu Host secara penuh menggunakan alur bridge `cloudbr0` ke router fisik, guna menghindari rute routing yang bentrok.
+Backup repo `infrastructure/netplan/50-cloud-init.yaml` sengaja dibuat nonaktif. File `99-nat.yaml` juga sengaja dinonaktifkan karena internet VM dan server Ubuntu Host menggunakan bridge `cloudbr0` ke router fisik, sehingga tidak terjadi rute routing yang bentrok.
 
 **3.4 Apply**
 
@@ -338,7 +377,7 @@ ping -c 3 192.168.101.1
 ping -c 3 8.8.8.8
 ```
 
-![Netplan Result](docs/images/phase3-netplan.png)
+![Netplan Result](https://hackmd.io/_uploads/r1jUfnpgzg.png)
 
 ---
 
@@ -428,7 +467,7 @@ http://192.168.101.220:8080/client/
 Default login: admin / password
 ```
 
-![CloudStack Login](docs/images/phase4-cloudstack-login.png)
+![CloudStack Login](https://hackmd.io/_uploads/BJD01jTlfg.png)
 
 ---
 
@@ -468,7 +507,7 @@ sudo systemctl enable nfs-kernel-server
 showmount -e localhost
 ```
 
-![NFS Export](docs/images/phase5-nfs-export.png)
+![NFS Export](https://hackmd.io/_uploads/BkeyQhalGx.png)
 
 **5.5 Download System VM Template**
 
@@ -504,7 +543,7 @@ Login ke dashboard `http://192.168.101.220:8080/client/`.
 | Start IP | `192.168.101.230` |
 | End IP | `192.168.101.240` |
 
-![Add Zone](docs/images/phase6-add-zone.png)
+![Add Zone](https://hackmd.io/_uploads/HJ3PX2TeGg.png)
 
 ### 6.2 Pod, Cluster, Host
 
@@ -543,12 +582,12 @@ sudo systemctl restart sshd
 
 | Storage | Protocol | Server | Path |
 |---------|----------|--------|------|
-| Primary | SharedMountPoint | `192.168.101.220` | `/var/lib/libvirt/images` |
+| Primary | NFS | `192.168.101.220` | `/export/primary` |
 | Secondary | NFS | `192.168.101.220` | `/export/secondary` |
 
 Setelah Zone berhasil dibuat → **Launch Zone** → tunggu System VM (SSVM, CPVM) deploy otomatis (~5–10 menit).
 
-![Zone Enabled](docs/images/phase6-zone-enabled.png)
+![Zone Enabled](https://hackmd.io/_uploads/H1Ij73pxfl.png)
 
 ### 6.4 Register ISO Ubuntu 22.04
 
@@ -557,31 +596,63 @@ Setelah Zone berhasil dibuat → **Launch Zone** → tunggu System VM (SSVM, CPV
 | Field | Value |
 |-------|-------|
 | Name | `Ubuntu-22.04-Server` |
-| URL | `http://releases.ubuntu.com/22.04/ubuntu-22.04.5-live-server-amd64.iso` |
+| URL | `http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso` |
 | Zone | `QuizServer-Zone` |
 | Bootable | ✅ |
 | OS Type | Ubuntu 22.04 LTS |
 
-> Jika koneksi internet VM lambat, salin ISO ke `/export/secondary/iso/` dan gunakan URL `file:///export/secondary/iso/ubuntu-22.04.5-live-server-amd64.iso`.
+ISO diunduh terlebih dahulu dari Windows host, lalu dikirim ke Ubuntu Server menggunakan `scp`. Setelah itu ISO disajikan dari direktori lokal Ubuntu Server menggunakan Python HTTP server, sehingga CloudStack mengambil ISO dari LAN internal yang jauh lebih cepat daripada download langsung dari internet.
+
+```powershell
+# Windows host
+scp ubuntu-22.04.5-live-server-amd64.iso ubuntu@192.168.101.220:~/iso/
+```
+
+```bash
+# Ubuntu Server / CloudStack host
+cd ~/iso
+python3 -m http.server 8000 --bind 192.168.101.220
+```
+
+Gunakan URL berikut saat register ISO:
+
+```text
+http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso
+```
 
 Tunggu status berubah dari `Not Ready` → `Ready`.
 
-![ISO Ready](docs/images/phase6-iso-ready.png)
+![ISO Ready](https://hackmd.io/_uploads/Hy1y4hTeGe.png)
 
-### 6.5 Compute Offering Custom
+### 6.5 Compute Offering
 
 `Service Offerings → Compute Offerings → + Add`
 
-| Field | Value |
-|-------|-------|
-| Name | `quizlivemedium` |
-| CPU Cores | `1` |
-| CPU MHz | `1000` |
-| Memory | `1024 MB` |
-| Network Rate | `200 Mbps` |
-| Storage Type | Local |
+**Compute offering yang tersedia:**
 
-![Compute Offering](docs/images/phase6-compute-offering.png)
+| Name | Display Text / Fungsi | CPU Cores | CPU MHz | Memory | Storage | Zone |
+|------|------------------------|-----------|---------|--------|---------|------|
+| `Small Instance` | Small Instance | `1` | `500` | `512 MB` | - | Global/default |
+| `Medium Instance` | Medium Instance | `1` | `1000` | `1024 MB` | - | Global/default |
+| `quizlivesmall` | Lightweight stateless services: API gateway, load balancer, bastion host, dan microservices. | `1` | `1000` | `512 MB` | `10 GB local SSD` | `QuizServer-Zone` |
+| `quizlivemedium` | Relational database workload MySQL 8.0, transactional integrity, dan moderate concurrency. | `1` | `1000` | `1024 MB` | `20 GB local SSD` | `QuizServer-Zone` |
+
+**Custom offering untuk QuizLive:**
+
+| Field | `quizlivesmall` | `quizlivemedium` |
+|-------|------------------|-------------------|
+| CPU Cores | `1` | `1` |
+| CPU MHz | `1000` | `1000` |
+| Memory | `512 MB` | `1024 MB` |
+| Storage | `10 GB local SSD` | `20 GB local SSD` |
+| Thin Provisioning | Enabled | Enabled |
+| Zone | `QuizServer-Zone` | `QuizServer-Zone` |
+
+Untuk VM backend dan database `quizlive-db-vm`, gunakan `quizlivemedium`.
+
+> **Catatan resource:** `quizlivesmall` awalnya disiapkan untuk service API yang ringan dan stateless. Namun pada implementasi ini API dan database digabung di VM `quizlive-db-vm` dengan offering `quizlivemedium`, karena laptop host memiliki RAM 24 GB dan environment CloudStack nested virtualization sering mati saat jumlah compute/VM ditambah. Keputusan ini menjaga deployment tetap stabil untuk kebutuhan demo dan pengujian end-to-end.
+
+![Compute Offering](https://hackmd.io/_uploads/Bk6b43axfl.png)
 
 ### 6.6 Isolated Guest Network
 
@@ -597,7 +668,7 @@ Tunggu status berubah dari `Not Ready` → `Ready`.
 
 Virtual Router otomatis ter-deploy dengan Public IP `192.168.101.232` (Source NAT).
 
-![Isolated Network](docs/images/phase6-isolated-network.png)
+![Isolated Network](https://hackmd.io/_uploads/S1mDE2axze.png)
 
 ---
 
@@ -620,7 +691,7 @@ Verifikasi NICs:
 - Network: `QuizLive-Isolated-OK`
 - Gateway: `10.1.1.1`
 
-![Instance Running](docs/images/phase7-instance-running.png)
+![Instance Running](https://hackmd.io/_uploads/By5sV26eze.png)
 
 ---
 
@@ -632,7 +703,7 @@ VM berada di isolated network sehingga akses awal harus via **View Console** (VN
 
 Klik instance `quizlive-db-vm` → klik **View Console** → window VNC terbuka → ikuti wizard installer Ubuntu.
 
-![View Console](docs/images/phase8-view-console.png)
+![View Console](https://hackmd.io/_uploads/B1E1B2TlGx.png)
 
 **8.2 Instalasi Ubuntu**
 
@@ -667,7 +738,7 @@ sudo systemctl enable --now mysql
 sudo mysql_secure_installation
 ```
 
-![MySQL Installed](docs/images/phase8-mysql-installed.png)
+![MySQL Installed](https://hackmd.io/_uploads/rkXIS3plfe.png)
 
 ---
 
@@ -706,8 +777,8 @@ sudo systemctl restart mysql
 ```bash
 cd ~
 git clone https://github.com/DHard4114/CloudStack-5.git
-cd CloudStack-5/compeng-quiz-api # Untuk setting backend
-cd ../compeng-quiz-fe # Untuk setting frontend
+cd CloudStack-5/compeng-quiz-api
+npm install
 ```
 
 **9.4 Konfigurasi environment**
@@ -736,7 +807,7 @@ BCRYPT_ROUNDS=12
 **9.5 Initialize schema**
 
 ```bash
-mysql -u quiz_api_worker -p enterprise_quizapp < /path/to/quizapp.sql
+mysql -u quiz_api_worker -p enterprise_quizapp < src/database/quizapp.sql
 ```
 
 **9.6 Start dengan PM2**
@@ -753,7 +824,8 @@ pm2 list
 pm2 logs quizlive-api --lines 20
 ```
 
-![PM2 Running](docs/images/phase9-pm2.png)
+![PM2 Running](https://hackmd.io/_uploads/S13zT3plGl.png)
+![PM2 Logs](https://hackmd.io/_uploads/Hk7Qpnpxzl.png)
 
 **9.7 Test lokal**
 
@@ -775,7 +847,7 @@ curl http://localhost:3000/health
 | `0.0.0.0/0` | TCP | `3000` | `3000` |
 | `0.0.0.0/0` | TCP | `2222` | `2222` |
 
-![Firewall Rules](docs/images/phase10-firewall.png)
+![Firewall Rules](https://hackmd.io/_uploads/ByDYanplMe.png)
 
 ### 10.2 Port Forwarding Rules
 
@@ -786,7 +858,7 @@ curl http://localhost:3000/health
 | `3000` | `3000` | TCP | `quizlive-db-vm` | `10.1.1.230` |
 | `2222` | `22` | TCP | `quizlive-db-vm` | `10.1.1.230` |
 
-![Port Forwarding](docs/images/phase10-port-forwarding.png)
+![Port Forwarding](https://hackmd.io/_uploads/HJdsThTxMx.png)
 
 > **Mengapa port 2222?** Port 22 pada host Ubuntu sudah digunakan SSH host fisik. Untuk menghindari konflik di Public IP `192.168.101.232`, SSH ke VM dipetakan ke port `2222`.
 
@@ -806,14 +878,14 @@ sudo ufw status verbose
 curl http://192.168.101.232:3000/health
 
 # Test SSH
-ssh -p 2222 ubuntu@192.168.101.232
+ssh quizlive-db@192.168.101.232 -p 2222
 
 # Test WebSocket
 curl http://192.168.101.232:3000/socket.io/
 # {"code":0,"message":"Transport unknown"}
 ```
 
-![Test cURL](docs/images/phase10-curl.png)
+![Test cURL](https://hackmd.io/_uploads/r19klapgzl.png)
 
 ---
 
@@ -823,8 +895,7 @@ Frontend dijalankan di **Windows host**.
 
 ```bash
 git clone https://github.com/DHard4114/CloudStack-5.git
-cd CloudStack-5/compeng-quiz-api # Untuk setting backend
-cd ../compeng-quiz-fe # Untuk setting frontend
+cd CloudStack-5/compeng-quiz-fe
 
 cp .env.example .env
 # Edit .env:
@@ -843,24 +914,158 @@ npm run build
 npm run preview
 ```
 
-![Frontend Landing](docs/images/phase11-landing.png)
+![Frontend Landing](https://hackmd.io/_uploads/H1wKxTTgzg.png)
 
 ---
 
 ## Phase 12 — Pengujian End-to-End
 
-| # | Skenario | Endpoint | Status |
-|---|----------|----------|--------|
+Pengujian dilakukan dengan dua peran:
+
+- **Admin/Guru** menjalankan dashboard dari laptop untuk membuat akun, membuat kuis, membuka sesi, memulai permainan, memantau skor, dan mengakhiri sesi.
+- **Client/Siswa** menggunakan HP pada jaringan yang sama untuk join quiz memakai kode sesi, menjawab pertanyaan, dan melihat hasil.
+
+### 12.1 Registrasi Akun Admin/Guru
+
+Admin membuat akun guru melalui halaman register.
+
+![Admin Register Placeholder](https://hackmd.io/_uploads/SyPHbopgMe.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru |
+| Flow | Register account |
+| Expected Result | Akun berhasil dibuat dan dapat digunakan untuk login |
+
+### 12.2 Login Admin/Guru
+
+Admin login menggunakan akun yang sudah dibuat.
+
+![Admin Login Placeholder](https://hackmd.io/_uploads/SkFdfjpeMg.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru |
+| Flow | Login |
+| Expected Result | Admin masuk ke dashboard QuizLive |
+
+### 12.3 Membuat Quiz
+
+Admin membuat quiz baru dari dashboard.
+
+![Create Quiz Placeholder](https://hackmd.io/_uploads/HkWXfiTeGe.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru |
+| Flow | Create quiz |
+| Expected Result | Quiz baru tersimpan dan muncul di daftar quiz |
+
+### 12.4 Menambahkan Pertanyaan
+
+Admin menambahkan pertanyaan, pilihan jawaban, dan jawaban benar ke dalam quiz.
+
+![Add Questions Placeholder](https://hackmd.io/_uploads/S1177saezl.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru |
+| Flow | Add questions |
+| Expected Result | Pertanyaan tersimpan dan siap dimainkan |
+
+### 12.5 Membuka Sesi Quiz
+
+Admin membuka sesi quiz sehingga sistem menghasilkan kode join/PIN untuk client.
+
+![Session Code Placeholder](https://hackmd.io/_uploads/SkccXo6ezx.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru |
+| Flow | Open quiz session |
+| Expected Result | Kode join/PIN muncul dan bisa dipakai client |
+
+### 12.6 Client HP Join Quiz
+
+Client membuka aplikasi dari HP, memasukkan kode join/PIN, lalu mengisi nama peserta.
+
+![Mobile Join Placeholder](https://hackmd.io/_uploads/BkOgNs6eMl.png)
+
+![Mobile Join Placeholder](https://hackmd.io/_uploads/rJNWEiaeGx.png)
+
+![Mobile Join Placeholder](https://hackmd.io/_uploads/HkCZNoTgze.png)
+
+![admin preview](https://hackmd.io/_uploads/SkGL4o6xzg.png)
+
+| Item | Value |
+|------|-------|
+| Role | Client/Siswa |
+| Device | HP |
+| Flow | Join quiz using session code |
+| Expected Result | Client berhasil masuk ke waiting room |
+
+### 12.7 Admin Memulai Quiz
+
+Setelah peserta masuk, admin menekan tombol start untuk memulai quiz.
+
+![Start Quiz Placeholder](https://hackmd.io/_uploads/Sy5cEsTxfl.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru |
+| Flow | Start session |
+| Expected Result | Pertanyaan pertama tampil ke client secara real-time |
+
+### 12.8 Client Menjawab Pertanyaan
+
+Client menjawab pertanyaan dari HP. Jawaban dikirim ke backend melalui API dan update real-time dikirim melalui Socket.IO.
+
+![Mobile Answer Placeholder](https://hackmd.io/_uploads/HkQWrsTxMx.png)
+
+| Item | Value |
+|------|-------|
+| Role | Client/Siswa |
+| Flow | Submit answer |
+| Expected Result | Jawaban client tercatat dan status permainan berubah |
+
+### 12.9 Skor dan Leaderboard Terlihat
+
+Admin dan client dapat melihat skor/leaderboard setelah jawaban diproses.
+
+![Leaderboard Placeholder](https://hackmd.io/_uploads/rkLxBopgGx.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru dan Client/Siswa |
+| Flow | Score update |
+| Expected Result | Skor tampil dan leaderboard ter-update secara real-time |
+
+### 12.10 Sesi Quiz Selesai
+
+Admin mengakhiri sesi quiz setelah seluruh pertanyaan selesai.
+
+![End Session Placeholder](https://hackmd.io/_uploads/BkU24jpxzx.png)
+
+| Item | Value |
+|------|-------|
+| Role | Admin/Guru |
+| Flow | End session |
+| Expected Result | Sesi selesai dan hasil akhir dapat dilihat |
+
+**Ringkasan skenario:**
+
+| # | Skenario | Endpoint / Mekanisme | Status |
+|---|----------|----------------------|--------|
 | 1 | Registrasi guru | `POST /api/auth/register` | ✅ |
-| 2 | Login | `POST /api/auth/login` | ✅ |
-| 3 | Buat kuis | `POST /api/quizzes` | ✅ |
+| 2 | Login guru | `POST /api/auth/login` | ✅ |
+| 3 | Buat quiz | `POST /api/quizzes` | ✅ |
 | 4 | Tambah pertanyaan | `POST /api/quizzes/:uuid/questions` | ✅ |
-| 5 | Buka sesi | `POST /api/sessions` | ✅ |
-| 6 | Siswa join | Frontend → input PIN | ✅ |
-| 7 | Mulai sesi | `POST /api/sessions/:uuid/start` | ✅ |
-| 8 | Submit jawaban | `POST /api/sessions/:uuid/answer` | ✅ |
-| 9 | WebSocket broadcast | `socket.emit('leaderboard-update')` | ✅ |
-| 10 | End session | `POST /api/sessions/:uuid/end` | ✅ |
+| 5 | Buka sesi dan generate kode join | `POST /api/sessions` | ✅ |
+| 6 | Client HP join quiz | Frontend → input kode join/PIN | ✅ |
+| 7 | Admin mulai quiz | `POST /api/sessions/:uuid/start` | ✅ |
+| 8 | Client submit jawaban | `POST /api/sessions/:uuid/answer` | ✅ |
+| 9 | Skor/leaderboard update | Socket.IO real-time event | ✅ |
+| 10 | Admin akhiri sesi | `POST /api/sessions/:uuid/end` | ✅ |
 
 **Network test:**
 
@@ -868,7 +1073,7 @@ npm run preview
 ping 192.168.101.232
 curl http://192.168.101.232:3000/health
 curl http://192.168.101.232:3000/socket.io/
-ssh -p 2222 ubuntu@192.168.101.232
+ssh quizlive-db@192.168.101.232 -p 2222
 ```
 
 **Failover PM2:**
@@ -879,8 +1084,6 @@ pm2 start quizlive-api     # Recovery
 sudo reboot                # Test auto-start
 pm2 list                   # Status: online
 ```
-
-![E2E Success](docs/images/phase12-e2e.png)
 
 ---
 
@@ -903,7 +1106,7 @@ pm2 list                   # Status: online
 **Solusi:** Gunakan port forwarding via Public IP:
 
 ```powershell
-ssh -p 2222 ubuntu@192.168.101.232
+ssh quizlive-db@192.168.101.232 -p 2222
 ```
 
 </details>
@@ -923,16 +1126,38 @@ ssh -p 2222 ubuntu@192.168.101.232
 <details>
 <summary><b>ISO Ubuntu Status <code>Not Ready</code></b></summary>
 
-**Penyebab:** Download timeout, secondary storage tidak ter-mount, atau DNS error di SSVM.
+**Penyebab:** Download ISO langsung dari internet terlalu lambat, SSVM timeout saat mengambil file, atau koneksi DNS/internet dari environment CloudStack tidak stabil.
 
-**Solusi:**
+**Solusi yang dipakai pada deployment ini:** download ISO dari Windows, kirim ke Ubuntu Server, lalu serve ISO dari direktori lokal Ubuntu Server memakai Python HTTP server.
 
-```bash
-sudo cp ubuntu-22.04.5-live-server-amd64.iso /export/secondary/iso/
-# Register dengan URL: file:///export/secondary/iso/ubuntu-22.04.5-live-server-amd64.iso
+1. Download ISO Ubuntu Server 22.04.5 dari Windows host.
+
+```text
+ubuntu-22.04.5-live-server-amd64.iso
 ```
 
-Atau restart SSVM dari `Infrastructure → System VMs → SSVM → Reboot`.
+2. Kirim ISO ke Ubuntu Server / CloudStack host.
+
+```powershell
+scp ubuntu-22.04.5-live-server-amd64.iso ubuntu@192.168.101.220:~/iso/
+```
+
+3. Jalankan HTTP server lokal dari Ubuntu Server.
+
+```bash
+cd ~/iso
+python3 -m http.server 8000 --bind 192.168.101.220
+```
+
+4. Register ISO di CloudStack dengan URL lokal berikut.
+
+```text
+http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso
+```
+
+5. Tunggu status ISO berubah dari `Not Ready` menjadi `Ready`.
+
+Jika masih `Not Ready`, restart SSVM dari `Infrastructure → System VMs → SSVM → Reboot`, lalu register ulang ISO dengan URL lokal yang sama.
 
 </details>
 
@@ -1121,10 +1346,10 @@ QuizLive-CloudStack/
 │   └── nfs/
 ├── compeng-quiz-api/         # Backend Node.js + Express
 │   ├── src/
-│   ├── db/schema.sql
+│   ├── src/database/quizapp.sql
 │   ├── package.json
 │   └── .env.example
-└── quizlive-frontend/        # Frontend React + Vite
+└── compeng-quiz-fe/          # Frontend React + Vite
     ├── src/
     ├── package.json
     └── .env.example
@@ -1143,7 +1368,7 @@ git clone https://github.com/DHard4114/CloudStack-5.git
 cd CloudStack-5/compeng-quiz-api
 npm install
 cp .env.example .env
-mysql -u root -p < db/schema.sql
+mysql -u root -p enterprise_quizapp < src/database/quizapp.sql
 pm2 start src/app.js --name quizlive-api
 pm2 save
 ```
@@ -1151,8 +1376,8 @@ pm2 save
 **Frontend (di Windows host):**
 
 ```bash
-git clone https://github.com/DHard4114/quizlive-frontend.git
-cd quizlive-frontend
+git clone https://github.com/DHard4114/CloudStack-5.git
+cd CloudStack-5/compeng-quiz-fe
 npm install
 cp .env.example .env
 npm run dev

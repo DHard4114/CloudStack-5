@@ -1,5 +1,2 @@
-network:
-  version: 2
-  ethernets:
-    enp0s3:
-      dhcp4: true
+# Cloud-init network config is disabled for this CloudStack host.
+# The active bridge configuration lives in /etc/netplan/00-installer-config.yaml.

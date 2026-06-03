@@ -43,6 +43,71 @@
       }
     }
   },
+  "cloudstack_image": {
+    "type": "ISO / bootable installation media",
+    "name": "Ubuntu-22.04-Server",
+    "id": "7ee18bac-4287-4e18-bc3e-e58dce8b3f0b",
+    "description": "Ubuntu 22.04.5 LTS Server",
+    "os_type": "Ubuntu 22.04 LTS",
+    "zone": "QuizServer-Zone",
+    "account": "admin",
+    "domain": "ROOT",
+    "created_at": "2026-05-17 05:04:35",
+    "size": "1.99 GB",
+    "bootable": true,
+    "ready": true,
+    "public": true,
+    "featured": true,
+    "direct_download": false,
+    "extractable": false,
+    "checksum": "5fd95142f2cb01abbb10d0f0452fb2830fb25c6b48fa15bc5b98307e2e34159e415ca7d40a16096f33f224cdd98d7fc5192e45c73a2ab2985fb05acb428d7015",
+    "url": "http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso",
+    "notes": "ISO ini dipakai sebagai media instalasi Ubuntu Server 22.04. Alokasi CPU VM tetap ditentukan oleh service offering saat VM dibuat."
+  },
+  "compute_offerings": [
+    {
+      "name": "Small Instance",
+      "display_text": "Small Instance",
+      "cpu_cores": 1,
+      "cpu_mhz": 500,
+      "memory_mb": 512,
+      "zone": null,
+      "type": "default"
+    },
+    {
+      "name": "Medium Instance",
+      "display_text": "Medium Instance",
+      "cpu_cores": 1,
+      "cpu_mhz": 1000,
+      "memory_mb": 1024,
+      "zone": null,
+      "type": "default"
+    },
+    {
+      "name": "quizlivesmall",
+      "display_text": "Optimal for lightweight stateless services: API gateway, load balancer, bastion host, and microservices. 1 vCPU, 512 MB RAM, 10 GB local SSD storage. Designed for high-density deployment with thin provisioning.",
+      "cpu_cores": 1,
+      "cpu_mhz": 1000,
+      "memory_mb": 512,
+      "storage_gb": 10,
+      "storage_type": "Local SSD",
+      "thin_provisioning": true,
+      "zone": "QuizServer-Zone",
+      "type": "custom"
+    },
+    {
+      "name": "quizlivemedium",
+      "display_text": "Dedicated for relational database workloads (MySQL 8.0). Balanced compute resources: 1 vCPU, 1024 MB RAM, 20 GB local SSD storage. Supports transactional integrity and moderate concurrency. Thin provisioning enabled for efficient storage usage.",
+      "cpu_cores": 1,
+      "cpu_mhz": 1000,
+      "memory_mb": 1024,
+      "storage_gb": 20,
+      "storage_type": "Local SSD",
+      "thin_provisioning": true,
+      "zone": "QuizServer-Zone",
+      "type": "custom"
+    }
+  ],
   "networks": {
     "physical_lan": {
       "cidr": "192.168.101.0/24",
@@ -89,14 +154,18 @@
   "host_configuration_artifacts": {
     "netplan": {
       "active_files": [
-        "/etc/netplan/00-installer-config.yaml",
-        "/etc/netplan/50-cloud-init.yaml"
+        "/etc/netplan/00-installer-config.yaml"
       ],
       "repo_backups": [
         "infrastructure/netplan/00-installer-config.yaml",
         "infrastructure/netplan/50-cloud-init.yaml"
       ],
       "inactive_or_disabled": [
+        {
+          "file": "/etc/netplan/50-cloud-init.yaml",
+          "repo_backup": "infrastructure/netplan/50-cloud-init.yaml",
+          "reason": "Cloud-init DHCP pada enp0s3 dinonaktifkan agar tidak konflik dengan bridge cloudbr0."
+        },
         {
           "file": "/etc/netplan/99-nat.yaml",
           "repo_backup": "infrastructure/netplan/99-nat.yaml",
@@ -139,10 +208,13 @@
       "vm_name": "quizlive-db-vm",
       "private_ip": "10.1.1.230",
       "os": "Ubuntu Server 22.04 LTS",
+      "cloudstack_image": "Ubuntu-22.04-Server",
+      "compute_offering": "quizlivemedium",
       "specs": {
-        "vCPU": "(depends on CloudStack service offering)",
-        "RAM": "(depends on CloudStack service offering)",
-        "storage": "(depends on volume size during provisioning)"
+        "vCPU": 1,
+        "cpu_mhz": 1000,
+        "RAM": "1024 MB",
+        "storage": "20 GB local SSD"
       },
       "exposed_services_via_virtual_router": [
         {
