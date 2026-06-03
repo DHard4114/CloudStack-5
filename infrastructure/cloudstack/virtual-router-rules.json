@@ -1,11 +1,41 @@
 {
   "public_ip": "192.168.101.232",
   "firewall_rules": [
-    { "source_cidr": "0.0.0.0/0", "protocol": "TCP", "start_port": 3000, "end_port": 3000 },
-    { "source_cidr": "0.0.0.0/0", "protocol": "TCP", "start_port": 2222, "end_port": 2222 }
+    {
+      "source_cidr": "0.0.0.0/0",
+      "protocol": "TCP",
+      "start_port": 2222,
+      "end_port": 2222,
+      "state": "Active",
+      "purpose": "Allow external SSH traffic to enter the Virtual Router network"
+    },
+    {
+      "source_cidr": "0.0.0.0/0",
+      "protocol": "TCP",
+      "start_port": 3000,
+      "end_port": 3000,
+      "state": "Active",
+      "purpose": "Allow external HTTP/WebSocket traffic for QuizLive API"
+    }
   ],
   "port_forwarding_rules": [
-    { "public_port": 2222, "private_ip": "10.1.1.230", "private_port": 22, "protocol": "TCP", "purpose": "SSH to VM" },
-    { "public_port": 3000, "private_ip": "10.1.1.230", "private_port": 3000, "protocol": "TCP", "purpose": "Express API Engine" }
+    {
+      "public_port": "2222",
+      "private_port": "22",
+      "protocol": "TCP",
+      "state": "Active",
+      "target_vm": "quizlive-db-vm",
+      "private_ip": "10.1.1.230",
+      "purpose": "Forward Virtual Router port 2222 to internal VM SSH port 22"
+    },
+    {
+      "public_port": "3000",
+      "private_port": "3000",
+      "protocol": "TCP",
+      "state": "Active",
+      "target_vm": "quizlive-db-vm",
+      "private_ip": "10.1.1.230",
+      "purpose": "Forward Virtual Router port 3000 to Express API service on internal VM"
+    }
   ]
 }

@@ -1,0 +1,210 @@
+{
+  "generated_at": "2026-06-03",
+  "project": {
+    "name": "QuizLive",
+    "context": "Tugas akhir Komputasi Awan (CloudStack + KVM) dengan aplikasi kuis real-time (React + Express + Socket.IO)",
+    "repository_modules": [
+      {
+        "name": "Backend API",
+        "path": "compeng-quiz-api",
+        "runtime": "Node.js (CommonJS)",
+        "entrypoint": "compeng-quiz-api/src/app.js",
+        "package_manifest": "compeng-quiz-api/package.json"
+      },
+      {
+        "name": "Frontend Web",
+        "path": "compeng-quiz-fe",
+        "runtime": "Vite + React",
+        "entrypoint": "compeng-quiz-fe/src/main.jsx",
+        "package_manifest": "compeng-quiz-fe/package.json"
+      },
+      {
+        "name": "Infrastructure Artifacts",
+        "path": "infrastructure",
+        "notes": "Berisi backup konfigurasi host/CloudStack/NFS/PM2 yang diambil dari Ubuntu Server"
+      }
+    ]
+  },
+  "infrastructure_platform": {
+    "iaas": "Apache CloudStack",
+    "hypervisor": "KVM",
+    "cloudstack_version": {
+      "documented_in_repo": "4.18.x",
+      "user_reported": "4.19.x",
+      "note": "Jika ingin 1 sumber kebenaran, samakan angka versi di README dan file ini."
+    },
+    "virtualization_host": {
+      "layer": "VirtualBox (nested virtualization)",
+      "guest_os": "Ubuntu Server 22.04 LTS",
+      "cloudstack_host_ip": "192.168.101.220",
+      "bridge": {
+        "name": "cloudbr0",
+        "backing_nic": "enp0s3"
+      }
+    }
+  },
+  "networks": {
+    "physical_lan": {
+      "cidr": "192.168.101.0/24",
+      "gateway": "192.168.101.1",
+      "notes": "LAN fisik; Windows host mengakses CloudStack host dan Virtual Router melalui segmen ini."
+    },
+    "cloudstack_public_ip_pool": {
+      "cidr": "192.168.101.230-192.168.101.240",
+      "notes": "Pool public IP CloudStack; salah satunya dipakai Virtual Router sebagai Source NAT."
+    },
+    "isolated_guest_network": {
+      "cidr": "10.1.1.0/24",
+      "gateway": "10.1.1.1",
+      "notes": "Jaringan internal isolated; VM aplikasi berada di subnet ini dan tidak routable langsung dari LAN."
+    }
+  },
+  "virtual_router": {
+    "role": "CloudStack Virtual Router (Source NAT + Firewall + Port Forwarding)",
+    "public_ip": "192.168.101.232",
+    "rules_source": {
+      "file": "infrastructure/cloudstack/virtual-router-rules.json",
+      "firewall_open_tcp_ports": [
+        2222,
+        3000
+      ],
+      "port_forwarding": [
+        {
+          "public_port": 2222,
+          "private_ip": "10.1.1.230",
+          "private_port": 22,
+          "protocol": "TCP",
+          "purpose": "SSH ke VM melalui public IP VR"
+        },
+        {
+          "public_port": 3000,
+          "private_ip": "10.1.1.230",
+          "private_port": 3000,
+          "protocol": "TCP",
+          "purpose": "Expose HTTP/WebSocket API (Express + Socket.IO)"
+        }
+      ]
+    }
+  },
+  "host_configuration_artifacts": {
+    "netplan": {
+      "active_files": [
+        "/etc/netplan/00-installer-config.yaml",
+        "/etc/netplan/50-cloud-init.yaml"
+      ],
+      "repo_backups": [
+        "infrastructure/netplan/00-installer-config.yaml",
+        "infrastructure/netplan/50-cloud-init.yaml"
+      ],
+      "inactive_or_disabled": [
+        {
+          "file": "/etc/netplan/99-nat.yaml",
+          "repo_backup": "infrastructure/netplan/99-nat.yaml",
+          "reason": "Konfigurasi NAT VirtualBox sengaja tidak dipakai untuk menghindari konflik routing; jaringan menggunakan bridge cloudbr0."
+        }
+      ],
+      "bridge_details": {
+        "bridge_name": "cloudbr0",
+        "address": "192.168.101.220/24",
+        "default_route": "192.168.101.1",
+        "dns": [
+          "8.8.8.8",
+          "1.1.1.1"
+        ]
+      }
+    },
+    "cloudstack_agent": {
+      "repo_backup": "infrastructure/cloudstack/agent.properties.template",
+      "notes": "File ini dapat memuat nilai sensitif (mis. passphrase). Hindari menyimpan secret di repo publik."
+    }
+  },
+  "storage": {
+    "nfs": {
+      "server": "CloudStack host (Ubuntu Server)",
+      "repo_backup_exports": "infrastructure/nfs/exports",
+      "exports": [
+        {
+          "path": "/export/primary",
+          "options": "*(rw,async,no_root_squash,no_subtree_check)"
+        },
+        {
+          "path": "/export/secondary",
+          "options": "*(rw,async,no_root_squash,no_subtree_check)"
+        }
+      ]
+    }
+  },
+  "virtual_machines": [
+    {
+      "vm_name": "quizlive-db-vm",
+      "private_ip": "10.1.1.230",
+      "os": "Ubuntu Server 22.04 LTS",
+      "specs": {
+        "vCPU": "(depends on CloudStack service offering)",
+        "RAM": "(depends on CloudStack service offering)",
+        "storage": "(depends on volume size during provisioning)"
+      },
+      "exposed_services_via_virtual_router": [
+        {
+          "service": "SSH",
+          "public": "192.168.101.232:2222",
+          "private": "10.1.1.230:22",
+          "protocol": "TCP"
+        },
+        {
+          "service": "QuizLive API (HTTP + Socket.IO)",
+          "public": "192.168.101.232:3000",
+          "private": "10.1.1.230:3000",
+          "protocol": "TCP"
+        }
+      ],
+      "services_installed": [
+        "MySQL Server 8.0 (default port 3306)",
+        "Node.js runtime (recommended 20.x LTS for this repo)",
+        "PM2 Process Manager"
+      ],
+      "applications": [
+        {
+          "name": "CompEng Quiz API",
+          "path": "compeng-quiz-api",
+          "listen_port": 3000,
+          "health_endpoint": "/health",
+          "start_commands": [
+            "npm run start",
+            "pm2 start src/app.js --name quizlive-api"
+          ],
+          "pm2": {
+            "ecosystem_file": "infrastructure/pm2/ecosystem.config.js",
+            "notes": "Mode cluster aktif (instances=max). Pastikan resource VM cukup."
+          },
+          "database_schema": "compeng-quiz-api/src/database/quizapp.sql",
+          "required_env_keys": [
+            "PORT",
+            "NODE_ENV",
+            "DB_HOST",
+            "DB_PORT",
+            "DB_USER",
+            "DB_PASSWORD",
+            "DB_NAME",
+            "DB_CONNECTION_LIMIT",
+            "JWT_SECRET",
+            "JWT_EXPIRES_IN",
+            "BCRYPT_ROUNDS"
+          ]
+        }
+      ]
+    }
+  ],
+  "frontend_deployment": {
+    "path": "compeng-quiz-fe",
+    "suggested_platform": "Vercel",
+    "env_keys": [
+      "VITE_API_URL",
+      "VITE_SOCKET_URL"
+    ],
+    "notes": [
+      "Jika frontend di-serve via HTTPS (mis. domain Vercel), maka backend juga harus diakses via HTTPS untuk menghindari Mixed Content.",
+      "Solusi umum: Cloudflare Tunnel / Ngrok / reverse proxy HTTPS di depan 192.168.101.232:3000."
+    ]
+  }
+}
