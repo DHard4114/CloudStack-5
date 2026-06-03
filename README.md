@@ -15,7 +15,7 @@
 [![PM2](https://img.shields.io/badge/PM2-Process%20Manager-2B037A)](https://pm2.keymetrics.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-![Banner](docs/images/banner.png)
+![Banner](https://hackmd.io/_uploads/SJ5eDp6gfx.png)
 
 ---
 
