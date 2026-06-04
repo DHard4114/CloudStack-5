@@ -1,6 +1,6 @@
-﻿# QuizLive Cloud - Implementasi Private Cloud IaaS Berbasis Apache CloudStack dan KVM untuk Platform Kuis Real-Time
+﻿# QuizLive Cloud — Private Cloud Infrastructure as a Service Based on Apache CloudStack and KVM for a Real-Time Interactive Quiz Platform
 
-> Proyek **QuizLive Cloud** merupakan implementasi lengkap Private Cloud Infrastructure as a Service (IaaS) menggunakan **Apache CloudStack 4.18** dan hypervisor **KVM** yang berjalan di atas **Ubuntu Server 22.04** dengan memanfaatkan nested virtualization pada VirtualBox. Infrastruktur ini dirancang untuk menghosting aplikasi **QuizLive** — sebuah platform kuis interaktif real-time berskala enterprise dengan arsitektur full-stack modern (React + Vite untuk frontend, Node.js + Express + Socket.IO untuk backend, dan MySQL 8.0 sebagai database).
+> **QuizLive Cloud** is a complete implementation of a Private Cloud Infrastructure as a Service (IaaS) environment utilizing **Apache CloudStack 4.18** and the **KVM** hypervisor, deployed on **Ubuntu Server 22.04 LTS** through nested virtualization within VirtualBox. The infrastructure is architected to host **QuizLive** — an enterprise-grade, real-time interactive quiz platform built upon a modern full-stack architecture comprising React + Vite for the presentation layer, Node.js + Express + Socket.IO for the application and communication layers, and MySQL 8.0 as the persistent relational data store.
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-blue)](https://mysql.com/)
@@ -23,171 +23,174 @@
 
 ![CloudStack Dashboard](https://hackmd.io/_uploads/BJD01jTlfg.png)
 
-![QuizLive Web](https://hackmd.io/_uploads/SyM-xsalfg.png)
+![QuizLive Web Interface](https://hackmd.io/_uploads/SyM-xsalfg.png)
 
 ---
 
-## Daftar Isi
+## Table of Contents
 
-- [Pendahuluan](#pendahuluan)
-- [Tim Pengembang](#tim-pengembang)
-- [Arsitektur Sistem](#arsitektur-sistem)
-- [Alokasi IP Address](#alokasi-ip-address)
+- [Abstract](#abstract)
+- [Development Team](#development-team)
+- [System Architecture](#system-architecture)
+- [IP Address Allocation](#ip-address-allocation)
 - [Prerequisites](#prerequisites)
-- [Phase 1 — Instalasi VirtualBox](#phase-1--instalasi-virtualbox)
-- [Phase 2 — Instalasi Ubuntu Server](#phase-2--instalasi-ubuntu-server)
-- [Phase 3 — Konfigurasi Network Host](#phase-3--konfigurasi-network-host)
-- [Phase 4 — Instalasi Apache CloudStack](#phase-4--instalasi-apache-cloudstack)
-- [Phase 5 — Konfigurasi NFS Server](#phase-5--konfigurasi-nfs-server)
-- [Phase 6 — Konfigurasi Infrastruktur CloudStack](#phase-6--konfigurasi-infrastruktur-cloudstack)
-- [Phase 7 — Deploy VM Instance](#phase-7--deploy-vm-instance)
-- [Phase 8 — Konfigurasi VM via View Console](#phase-8--konfigurasi-vm-via-view-console)
-- [Phase 9 — Deployment Backend](#phase-9--deployment-backend)
-- [Phase 10 — Port Forwarding & Firewall](#phase-10--port-forwarding--firewall)
-- [Phase 11 — Deployment Frontend](#phase-11--deployment-frontend)
-- [Phase 12 — Pengujian End-to-End](#phase-12--pengujian-end-to-end)
+- [Phase 1 — VirtualBox Installation](#phase-1--virtualbox-installation)
+- [Phase 2 — Ubuntu Server Installation](#phase-2--ubuntu-server-installation)
+- [Phase 3 — Host Network Configuration](#phase-3--host-network-configuration)
+- [Phase 4 — Apache CloudStack Installation](#phase-4--apache-cloudstack-installation)
+- [Phase 5 — NFS Storage Server Configuration](#phase-5--nfs-storage-server-configuration)
+- [Phase 6 — CloudStack Infrastructure Configuration](#phase-6--cloudstack-infrastructure-configuration)
+- [Phase 7 — VM Instance Provisioning](#phase-7--vm-instance-provisioning)
+- [Phase 8 — VM Configuration via Console Access](#phase-8--vm-configuration-via-console-access)
+- [Phase 9 — Backend Application Deployment](#phase-9--backend-application-deployment)
+- [Phase 10 — Port Forwarding and Firewall Policy Configuration](#phase-10--port-forwarding-and-firewall-policy-configuration)
+- [Phase 11 — Frontend Application Deployment](#phase-11--frontend-application-deployment)
+- [Phase 12 — End-to-End System Validation](#phase-12--end-to-end-system-validation)
 - [Troubleshooting](#troubleshooting)
 - [Command Reference](#command-reference)
-- [Struktur Repository](#struktur-repository)
+- [Repository Structure](#repository-structure)
 - [Quick Start](#quick-start)
-- [Pengembangan Lanjutan](#pengembangan-lanjutan)
-- [Lisensi](#lisensi)
+- [Future Development Roadmap](#future-development-roadmap)
+- [License](#license)
 
 ---
 
-## Pendahuluan
+## Abstract
 
-QuizLive adalah platform kuis interaktif yang dirancang untuk mendukung pembelajaran di lingkungan Teknik Komputer. Sistem mengadopsi arsitektur cloud-native dengan **Apache CloudStack** sebagai IaaS lokal, di mana seluruh komponen aplikasi di-deploy di atas infrastruktur virtual yang dikelola mandiri.
+QuizLive is an interactive real-time quiz platform designed to support computer engineering education environments. The system adopts a cloud-native architecture in which **Apache CloudStack** serves as the local IaaS orchestration layer, managing the complete lifecycle of virtual compute, storage, and network resources. All application components are deployed exclusively within a self-managed, isolated virtual infrastructure provisioned and governed by the CloudStack management server.
 
-**Tujuan implementasi:**
+**Implementation objectives:**
 
-- Membangun infrastruktur cloud privat terisolasi dengan CloudStack
-- Menerapkan konsep isolated network, Source NAT, dan port forwarding
-- Mendeploy aplikasi full-stack di lingkungan terisolasi
-- Menjamin akses publik dari frontend ke backend via Virtual Router
+- Construct an isolated private cloud infrastructure using Apache CloudStack with KVM as the underlying hypervisor.
+- Demonstrate the operational application of isolated guest networking, Source Network Address Translation (NAT), and Destination NAT (DNAT) port forwarding within a CloudStack Advanced Zone.
+- Deploy a production-grade full-stack application within a fully isolated, non-routable guest network segment.
+- Establish secure, controlled public ingress to internal application services via the CloudStack Virtual Router acting as the network perimeter gateway.
 
 ---
 
-## Tim Pengembang
+## Development Team
 
-| Nama | NPM | Peran |
-|------|-----|-------|
+| Name | Student ID | Role |
+|------|------------|------|
 | **Daffa Hardhan** | `2306161763` | Ideation Lead & Core Infrastructure Architect |
-| **Alexander Christhian** | `2306267025` | Database Administrator & Backend |
-| **Arsinta Kirana Nisa** | `2306215980` | Frontend Developer & UI/UX |
-| **Wiellona Darlene Oderia Saragih** | `2306264396` | Frontend Developer & UI/UX |
+| **Alexander Christhian** | `2306267025` | Database Administrator & Backend Engineer |
+| **Arsinta Kirana Nisa** | `2306215980` | Frontend Developer & UI/UX Designer |
+| **Wiellona Darlene Oderia Saragih** | `2306264396` | Frontend Developer & UI/UX Designer |
 | **Muhammad Hilmi Al Muttaqi** | `2306267082` | Virtual Network & Security Engineer |
-| **Laura Fawzia Sambowo** | `2306260145` | Storage (NFS) & Virtualization Specialist |
-| **Jeremy Wijanarko Mulyono** | `2306267132` | CloudStack Administrator & System Ops |
-| **Falah Andhesryo** | `2306161990` | Backend Engineer & VM Deployment |
-| **Achmad Zaidan Lazuardy** | `2206059793` | Technical Writer & Testing|
+| **Laura Fawzia Sambowo** | `2306260145` | NFS Storage & Virtualization Specialist |
+| **Jeremy Wijanarko Mulyono** | `2306267132` | CloudStack Administrator & System Operations |
+| **Falah Andhesryo** | `2306161990` | Backend Engineer & VM Deployment Specialist |
+| **Achmad Zaidan Lazuardy** | `2206059793` | Technical Writer & Quality Assurance |
 
-**Dosen Pengampu:** Yan Maraden, S.T., M.T., M.Sc
-**Mata Kuliah:** Komputasi Awan
-**Program Studi:** Teknik Komputer, Fakultas Teknik, Universitas Indonesia
-**Semester:** Genap 2025/2026
+**Supervising Lecturer:** Yan Maraden, S.T., M.T., M.Sc.  
+**Course:** Cloud Computing  
+**Department:** Computer Engineering, Faculty of Engineering, Universitas Indonesia  
+**Academic Term:** Even Semester 2025/2026
 
 ---
-## Diagram Cloudstack
 
-![Diagram Arsitektur](https://hackmd.io/_uploads/rkX57mhkGe.png)
+## CloudStack Architecture Diagram
 
+![Architecture Diagram](https://hackmd.io/_uploads/rkX57mhkGe.png)
 
-## Arsitektur Sistem
+---
+
+## System Architecture
+
+The following diagram illustrates the complete infrastructure topology, delineating the physical LAN layer, the CloudStack host, the CloudStack Virtual Infrastructure layer, and the isolated guest network segment in which the application VM resides.
 
 ```mermaid
 flowchart TB
-    subgraph EXT["External Client"]
-        WIN["Windows Laptop<br/>192.168.101.102"]
+    subgraph EXT["External Client — Physical LAN"]
+        WIN["Windows Workstation<br/>192.168.101.102"]
     end
 
-    subgraph PHY["Physical LAN — 192.168.101.0/24"]
-        RTR["Physical Router<br/>192.168.101.1"]
+    subgraph PHY["Physical Network Layer — 192.168.101.0/24"]
+        RTR["Physical Gateway Router<br/>192.168.101.1"]
     end
 
-    subgraph HOST["Host Ubuntu Server (CloudStack + KVM)"]
-        HIP["IP: 192.168.101.220<br/>4 vCPU · 8 GB RAM"]
-        BR["cloudbr0 (Bridge)"]
+    subgraph HOST["CloudStack Host — Ubuntu Server 22.04 LTS (KVM Hypervisor)"]
+        HIP["Host Management IP: 192.168.101.220<br/>4 vCPU · 8 GB RAM"]
+        BR["cloudbr0 — Linux Bridge Interface"]
     end
 
-    subgraph CS["CloudStack Virtual Infrastructure"]
-        VR["Virtual Router<br/>Public IP: 192.168.101.232<br/>Source NAT + DNAT"]
+    subgraph CS["CloudStack Virtual Infrastructure Layer"]
+        VR["CloudStack Virtual Router<br/>Public IP: 192.168.101.232<br/>Source NAT · DNAT · Firewall"]
     end
 
-    subgraph ISO["Isolated Guest Network — 10.1.1.0/24"]
-        VM["quizlive-db-vm<br/>10.1.1.230"]
-        API["Node.js + Express + Socket.IO<br/>Port 3000"]
-        DB[("MySQL 8.0<br/>enterprise_quizapp")]
+    subgraph ISO["Isolated Guest Network — 10.1.1.0/24 (VLAN 100)"]
+        VM["quizlive-db-vm<br/>Guest IP: 10.1.1.230"]
+        API["Application Layer<br/>Node.js + Express + Socket.IO<br/>TCP Port 3000"]
+        DB[("Persistence Layer<br/>MySQL 8.0<br/>enterprise_quizapp")]
     end
 
     WIN --> RTR
     RTR <--> HIP
     HIP --> BR
     BR --> VR
-    VR -->|DNAT :3000| API
-    VR -->|DNAT :2222 → :22| VM
+    VR -->|"DNAT :3000 → 10.1.1.230:3000"| API
+    VR -->|"DNAT :2222 → 10.1.1.230:22"| VM
     VM --> API
     API --> DB
 ```
 
-**Alur data sederhana:**
+**Request data flow:**
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant FE as Frontend (React)
-    participant VR as Virtual Router
-    participant API as Backend
-    participant DB as MySQL
+    participant U as End User
+    participant FE as Frontend (React + Vite)
+    participant VR as CloudStack Virtual Router<br/>(Source NAT / DNAT)
+    participant API as Backend API Server<br/>(Node.js + Express + Socket.IO)
+    participant DB as Relational Database<br/>(MySQL 8.0)
 
-    U->>FE: Buka aplikasi
-    FE->>VR: HTTP/WS Request
-    VR->>API: DNAT → 10.1.1.230:3000
-    API->>DB: Query   
-    DB-->>API: Result
-    API-->>VR: Response       
-    VR-->>FE: Response
-    FE-->>U: Render UI
+    U->>FE: Initiates application session
+    FE->>VR: HTTP / WebSocket request to 192.168.101.232:3000
+    VR->>API: DNAT translation → 10.1.1.230:3000
+    API->>DB: Executes SQL query against enterprise_quizapp
+    DB-->>API: Returns result set
+    API-->>VR: Constructs and returns HTTP / WebSocket response
+    VR-->>FE: Forwards response to requesting client
+    FE-->>U: Renders updated UI state
 ```
 
 ---
 
-## Alokasi IP Address
+## IP Address Allocation
 
-| Segment | Range | Tipe | Fungsi |
-|---------|-------|------|--------|
-| LAN Windows Host (DHCP) | `192.168.101.100 – .199` | Dinamis | Laptop host, browser, frontend dev |
-| Host Hypervisor | `192.168.101.220` | Statis | Ubuntu Server (CloudStack) |
-| CloudStack Public IP Pool | `192.168.101.230 – .240` | Pool | Virtual Router: `.232` (Source NAT) |
-| Isolated Guest Network | `10.1.1.0/24` | Internal | VM backend: `10.1.1.230` |
-| Gateway LAN | `192.168.101.1` | Fixed | Default gateway fisik |
+| Network Segment | Address Range | Assignment Type | Function |
+|-----------------|---------------|-----------------|----------|
+| Physical LAN — DHCP Pool | `192.168.101.100 – 192.168.101.199` | Dynamic (DHCP) | Client workstations, development hosts, browser-based access |
+| CloudStack Host (Hypervisor) | `192.168.101.220` | Static | Ubuntu Server running CloudStack management and KVM agent |
+| CloudStack Public IP Pool | `192.168.101.230 – 192.168.101.240` | Static Pool | Virtual Router Public IP: `192.168.101.232` (Source NAT) |
+| Isolated Guest Network | `10.1.1.0/24` | Internal (non-routable) | VM application instance: `10.1.1.230`; Virtual Router gateway: `10.1.1.1` |
+| Physical Default Gateway | `192.168.101.1` | Fixed | Physical campus/lab router |
 
-
-**Topology Jaringan:**
+**Network Topology Diagram:**
 
 ```mermaid
 flowchart TD
-    INET("Internet / Jaringan Fisik")
+    INET("Physical Network / Internet Uplink")
 
-    subgraph Physical [Lapisan Fisik & Host]
+    subgraph Physical ["Physical & Host Layer"]
         direction TB
-        RTR("Router Kampus / WiFi Lab<br/>Gateway Fisik: 192.168.101.1")
-        BR{"Bridge Interface<br/>(cloudbr0)"}
-        HOST("CloudStack Host (Ubuntu)<br/>IP Host: 192.168.101.220")
+        RTR("Physical Campus Router / Lab Gateway<br/>192.168.101.1")
+        BR{"Linux Bridge Interface<br/>(cloudbr0)"}
+        HOST("CloudStack Hypervisor Host — Ubuntu Server 22.04 LTS<br/>Management IP: 192.168.101.220")
     end
 
-    subgraph Virtual [Lapisan Virtual CloudStack]
+    subgraph Virtual ["CloudStack Virtual Infrastructure Layer"]
         direction TB
-        VR("Virtual Router (VLAN 100)<br/>Public IP: 192.168.101.232<br/>Gateway VM: 10.1.1.1")
+        VR("CloudStack Virtual Router — VLAN 100<br/>Public IP: 192.168.101.232 (Source NAT)<br/>Guest Network Gateway: 10.1.1.1")
         ISONET(("Isolated Guest Network<br/>10.1.1.0/24"))
-        VM("quizlive-db-vm<br/>IP Privat: 10.1.1.230")
+        VM("quizlive-db-vm<br/>Guest Private IP: 10.1.1.230")
     end
 
     INET --> RTR
     RTR --> BR
     BR --> HOST
     HOST --> VR
-    VR -->|Port Forwarding 3000 & 2222| ISONET
+    VR -->|"DNAT — TCP 3000 (API) & TCP 2222 (SSH)"| ISONET
     ISONET --> VM
 ```
 
@@ -195,51 +198,53 @@ flowchart TD
 
 ## Prerequisites
 
-**Hardware minimum:**
+### Minimum Hardware Requirements
 
-| Komponen | Spesifikasi |
-|----------|-------------|
-| Processor | x86_64 dengan VT-x / AMD-V enabled di BIOS |
-| RAM | 12 GB (rekomendasi 16 GB+) |
-| Storage | 150 GB free (rekomendasi SSD) |
-| Network | LAN dengan akses internet |
+| Component | Specification |
+|-----------|---------------|
+| Processor | x86_64 architecture with Intel VT-x or AMD-V enabled in BIOS/UEFI firmware |
+| System RAM | 12 GB minimum (16 GB or greater recommended) |
+| Storage | 150 GB free disk space (SSD strongly recommended for I/O performance) |
+| Network Interface | LAN connectivity with internet access |
 
-**Software yang harus disiapkan:**
+### Required Software
 
-- VirtualBox 7.0+
-- Ubuntu Server 22.04 LTS ISO ([download](https://ubuntu.com/download/server))
-- CloudStack 4.18.2.5 packages
+- VirtualBox 7.0 or later
+- Ubuntu Server 22.04 LTS ISO image ([official download](https://releases.ubuntu.com/jammy/ubuntu-22.04.5-live-server-amd64.iso))
+- Apache CloudStack 4.18.2.5 packages
 - Node.js 20.x LTS
-- Git, SSH client, web browser
+- Git, SSH client, modern web browser
 
-**Verifikasi virtualisasi Windows:**
+### Hardware Virtualization Verification (Windows Host)
+
+Prior to provisioning the host VM, confirm that hardware-assisted virtualization is exposed to the hypervisor:
 
 ```powershell
 Get-ComputerInfo | Select-Object HyperVRequirementVirtualizationFirmwareEnabled
 ```
 
-Output harus `True`. Jika `False`, enable di BIOS (Intel: VT-x, AMD: SVM).
+The expected output is `True`. If `False`, enable the relevant capability in the host system firmware: **Intel VT-x** on Intel platforms, or **AMD SVM** on AMD platforms.
 
 ---
 
-## Phase 1 — Instalasi VirtualBox
+## Phase 1 — VirtualBox Installation
 
-**1.1 Download**
+### 1.1 Obtain Installation Media
 
-Unduh dari [virtualbox.org/wiki/Downloads](https://www.virtualbox.org/wiki/Downloads):
+Download the following packages from the official VirtualBox distribution at [virtualbox.org/wiki/Downloads](https://www.virtualbox.org/wiki/Downloads):
 
-- VirtualBox 7.0.x untuk Windows hosts
-- VirtualBox Extension Pack (opsional)
+- VirtualBox 7.0.x for Windows hosts
+- VirtualBox Extension Pack (optional; required for USB 3.0 and remote display support)
 
-**1.2 Instalasi**
+### 1.2 Installation Procedure
 
-Jalankan installer sebagai Administrator. Klik Next pada semua dialog, setujui reset network interface, klik Finish.
+Execute the installer with administrative privileges. Accept all default settings, acknowledge the temporary network interface reset prompted during installation, and complete the installation wizard.
 
-**1.3 Install Extension Pack**
+### 1.3 Extension Pack Installation
 
-Buka VirtualBox Manager → `File → Tools → Extension Pack Manager` → Install → pilih file `.vbox-extpack`.
+Open VirtualBox Manager, navigate to `File → Tools → Extension Pack Manager`, click **Install**, and select the downloaded `.vbox-extpack` file.
 
-**1.4 Verifikasi**
+### 1.4 Installation Verification
 
 ```powershell
 VBoxManage --version
@@ -249,61 +254,71 @@ VBoxManage --version
 
 ---
 
-## Phase 2 — Instalasi Ubuntu Server
+## Phase 2 — Ubuntu Server Installation
 
-**2.1 Buat VM**
+### 2.1 Virtual Machine Creation
 
-VirtualBox Manager → New (Ctrl+N):
+Open VirtualBox Manager and create a new VM (`Ctrl+N`) with the following parameters:
 
 | Parameter | Value |
 |-----------|-------|
-| Name | `CloudStack-Host` |
+| VM Name | `CloudStack-Host` |
 | ISO Image | `ubuntu-22.04.5-live-server-amd64.iso` |
 | Base Memory | `8192 MB` |
-| Processors | `4 CPU` |
-| Hard Disk | `100 GB` (VDI, Dynamically allocated) |
-| Enable EFI | ✅ |
+| vCPU Count | `4` |
+| Virtual Hard Disk | `100 GB` (VDI format, Dynamically Allocated) |
+| Enable EFI | ✅ Enabled |
 
-**2.2 Konfigurasi Network Adapter Dual**
+### 2.2 Dual Network Adapter Configuration
 
-Settings → Network:
+Navigate to `Settings → Network` and configure the following adapters:
 
-| Adapter | Type | Promiscuous Mode |
-|---------|------|------------------|
-| Adapter 1 | Bridged Adapter (pilih interface fisik) | **Allow All** |
+| Adapter | Attachment Type | Promiscuous Mode |
+|---------|-----------------|------------------|
+| Adapter 1 | Bridged Adapter (select physical NIC) | **Allow All** |
 | Adapter 2 | NAT | Default |
 
-![Network Config](https://hackmd.io/_uploads/ryP9-nTlMx.png)
+Promiscuous mode on Adapter 1 is required to allow the CloudStack bridge interface (`cloudbr0`) to receive guest VM traffic across the physical LAN.
 
-**2.3 Enable Nested Virtualization**
+![Network Adapter Configuration](https://hackmd.io/_uploads/ryP9-nTlMx.png)
 
-Di Windows host:
+### 2.3 Enabling Nested Virtualization
+
+Nested virtualization must be enabled to allow KVM to expose hardware virtualization extensions to guest VMs provisioned by CloudStack. This enables Type-1 hypervisor behavior within the VirtualBox guest environment.
+
+**On the Windows host:**
 
 ```powershell
 cd "C:\Program Files\Oracle\VirtualBox"
 .\VBoxManage modifyvm "CloudStack-Host" --nested-hw-virt on
 ```
 
-Di Ubuntu Server host:
+**On the Ubuntu Server host (post-installation):**
 
 ```bash
 echo "options kvm_intel nested=1" | sudo tee /etc/modprobe.d/kvm.conf
 sudo modprobe -r kvm_intel
 sudo modprobe kvm_intel nested=1
-cat /sys/module/kvm_intel/parameters/nested # harus Y 
+cat /sys/module/kvm_intel/parameters/nested   # Expected output: Y
 ```
 
-**2.4 Instalasi Ubuntu**
+> **Note:** For AMD-based hosts, substitute `kvm_intel` with `kvm_amd` in the above commands.
 
-Start VM, ikuti wizard:
+### 2.4 Ubuntu Server Operating System Installation
 
-- Language: English
-- Server name: `cloudstack-host`
-- Username: `ubuntu`
-- Storage: Use entire disk + LVM
-- ✅ Install OpenSSH server
+Start the VM and proceed through the Ubuntu Server installation wizard with the following configuration:
 
-**2.5 Update sistem**
+| Setting | Value |
+|---------|-------|
+| Language | English |
+| Hostname | `cloudstack-host` |
+| Primary User | `ubuntu` |
+| Storage Layout | Full disk utilization with LVM |
+| OpenSSH Server | ✅ Enabled |
+
+### 2.5 Base System Update and Dependency Installation
+
+Upon first login, perform a full system upgrade and install foundational utilities:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
@@ -313,17 +328,19 @@ sudo apt install -y vim curl wget net-tools bridge-utils \
 
 ---
 
-## Phase 3 — Konfigurasi Network Host
+## Phase 3 — Host Network Configuration
 
-**3.1 Identifikasi interface**
+This phase establishes the `cloudbr0` Linux bridge interface, which serves as the unified network fabric through which the CloudStack management server, the KVM agent, and all guest VMs communicate with the physical LAN infrastructure.
+
+### 3.1 Network Interface Identification
 
 ```bash
 ip addr show
 ```
 
-Catat nama interface bridged (mis. `enp0s3`).
+Record the name of the bridged physical interface (e.g., `enp0s3`).
 
-**3.2 Konfigurasi bridge**
+### 3.2 Bridge Interface Configuration via Netplan
 
 ```bash
 sudo vim /etc/netplan/00-installer-config.yaml
@@ -351,9 +368,11 @@ network:
         forward-delay: 0
 ```
 
-**3.3 Nonaktifkan konfigurasi network Cloud-Init**
+Disabling Spanning Tree Protocol (STP) and setting `forward-delay: 0` eliminates bridge initialization latency, which is critical for the reliable operation of CloudStack System VM deployments.
 
-Cloud-init DHCP pada `enp0s3` harus dinonaktifkan agar tidak bentrok dengan bridge `cloudbr0`.
+### 3.3 Disabling Cloud-Init Network Management
+
+Cloud-init's default DHCP assignment on the physical interface `enp0s3` must be suppressed to prevent address conflicts with the statically configured `cloudbr0` bridge.
 
 ```bash
 sudo vim /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
@@ -363,9 +382,9 @@ sudo vim /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
 network: {config: disabled}
 ```
 
-Backup repo `infrastructure/netplan/50-cloud-init.yaml` sengaja dibuat nonaktif. File `99-nat.yaml` juga sengaja dinonaktifkan karena internet VM dan server Ubuntu Host menggunakan bridge `cloudbr0` ke router fisik, sehingga tidak terjadi rute routing yang bentrok.
+> **Design rationale:** The repository files `infrastructure/netplan/50-cloud-init.yaml` and `99-nat.yaml` are intentionally disabled. Outbound internet connectivity for both the CloudStack host and guest VMs is provided via `cloudbr0` routing through the physical campus gateway, eliminating the need for secondary NAT configuration and preventing conflicting routing table entries.
 
-**3.4 Apply**
+### 3.4 Applying Network Configuration
 
 ```bash
 sudo chmod 600 /etc/netplan/*.yaml
@@ -377,13 +396,13 @@ ping -c 3 192.168.101.1
 ping -c 3 8.8.8.8
 ```
 
-![Netplan Result](https://hackmd.io/_uploads/r1jUfnpgzg.png)
+![Netplan Application Result](https://hackmd.io/_uploads/r1jUfnpgzg.png)
 
 ---
 
-## Phase 4 — Instalasi Apache CloudStack
+## Phase 4 — Apache CloudStack Installation
 
-**4.1 Tambah repository**
+### 4.1 CloudStack Package Repository Configuration
 
 ```bash
 wget -O - https://download.cloudstack.org/release.asc | sudo apt-key add -
@@ -394,14 +413,16 @@ echo "deb https://download.cloudstack.org/ubuntu jammy 4.18" | \
 sudo apt update
 ```
 
-**4.2 Install MySQL untuk database CloudStack**
+### 4.2 MySQL Database Server Installation for CloudStack
+
+The CloudStack management server requires a dedicated MySQL instance to persist zone, host, VM, and network configuration state.
 
 ```bash
 sudo apt install -y mysql-server
 sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
 ```
 
-Tambahkan di section `[mysqld]`:
+Append the following directives under the `[mysqld]` section to satisfy CloudStack's database operational requirements:
 
 ```ini
 innodb_rollback_on_timeout=1
@@ -415,15 +436,15 @@ binlog-format='ROW'
 sudo systemctl restart mysql && sudo systemctl enable mysql
 ```
 
-**4.3 Install CloudStack**
+### 4.3 CloudStack Package Installation
 
 ```bash
 sudo apt install -y cloudstack-management cloudstack-agent
 ```
 
-jika koneksi internet lambat, dapat mengunduh file .deb dari Windows lalu install menggunakan dpkg -i.
+> **Note on slow network environments:** If internet bandwidth is constrained, the `.deb` packages may be downloaded on the Windows host and transferred to the Ubuntu Server via `scp`, then installed using `dpkg -i`.
 
-**4.4 Setup database CloudStack**
+### 4.4 CloudStack Database Schema Initialization
 
 ```bash
 sudo cloudstack-setup-databases cloud:cloudpass@localhost \
@@ -431,55 +452,68 @@ sudo cloudstack-setup-databases cloud:cloudpass@localhost \
     -i 192.168.101.220
 ```
 
-**4.5 Setup management server**
+This command creates the CloudStack database schema and establishes the management server's operational credentials.
+
+### 4.5 CloudStack Management Server Initialization
 
 ```bash
 sudo cloudstack-setup-management
 ```
 
-**4.6 Konfigurasi agent**
+### 4.6 CloudStack Agent Host Binding Configuration
+
+The CloudStack agent must be bound to the correct management IP to ensure proper communication with the management server:
 
 ```bash
 sudo vim /etc/cloudstack/agent/agent.properties
 ```
 
-Pastikan `host=192.168.101.220` (bukan `10.0.3.15` atau `localhost`).
+Verify that the `host` directive is set to the correct management IP address:
 
-**4.7 Verifikasi KVM**
+```
+host=192.168.101.220
+```
+
+> **Critical:** Ensure this value is not set to `10.0.3.15` (the NAT interface address) or `localhost`, as either would prevent the agent from registering correctly with the management server.
+
+### 4.7 KVM Hypervisor Verification
 
 ```bash
 sudo modprobe kvm
-sudo modprobe kvm_intel  # atau kvm_amd
+sudo modprobe kvm_intel       # Use kvm_amd on AMD-based hosts
 lsmod | grep kvm
-cat /sys/module/kvm_intel/parameters/nested  # Expected: Y atau 1
+cat /sys/module/kvm_intel/parameters/nested   # Expected: Y or 1
 ```
 
-**4.8 Restart services**
+### 4.8 Service Restart and Initialization
 
 ```bash
 sudo systemctl restart cloudstack-management cloudstack-agent libvirtd
 ```
 
-**4.9 Akses dashboard**
+### 4.9 CloudStack Management Dashboard Access
 
 ```
-http://192.168.101.220:8080/client/
-Default login: admin / password
+URL:      http://192.168.101.220:8080/client/
+Username: admin
+Password: password
 ```
 
-![CloudStack Login](https://hackmd.io/_uploads/BJD01jTlfg.png)
+![CloudStack Dashboard Login](https://hackmd.io/_uploads/BJD01jTlfg.png)
 
 ---
 
-## Phase 5 — Konfigurasi NFS Server
+## Phase 5 — NFS Storage Server Configuration
 
-**5.1 Install NFS**
+Apache CloudStack requires dedicated primary and secondary storage volumes accessible via NFS. Primary storage holds active VM disk images (volumes), while secondary storage hosts system VM templates, ISO images, and VM snapshots.
+
+### 5.1 NFS Server Package Installation
 
 ```bash
 sudo apt install -y nfs-kernel-server quota
 ```
 
-**5.2 Buat direktori storage**
+### 5.2 Storage Export Directory Provisioning
 
 ```bash
 sudo mkdir -p /export/primary /export/secondary
@@ -487,7 +521,7 @@ sudo chown -R nobody:nogroup /export
 sudo chmod -R 777 /export
 ```
 
-**5.3 Konfigurasi exports**
+### 5.3 NFS Export Configuration
 
 ```bash
 sudo vim /etc/exports
@@ -498,7 +532,9 @@ sudo vim /etc/exports
 /export/secondary  *(rw,async,no_root_squash,no_subtree_check)
 ```
 
-**5.4 Apply**
+The `no_root_squash` option is required to permit CloudStack's storage management operations, which execute as root within guest VMs and the management server.
+
+### 5.4 Export Activation and Service Enablement
 
 ```bash
 sudo exportfs -a
@@ -507,34 +543,40 @@ sudo systemctl enable nfs-kernel-server
 showmount -e localhost
 ```
 
-![NFS Export](https://hackmd.io/_uploads/BkeyQhalGx.png)
+![NFS Export Verification](https://hackmd.io/_uploads/BkeyQhalGx.png)
 
-**5.5 Download System VM Template**
+### 5.5 CloudStack KVM System VM Template Registration
+
+CloudStack requires a pre-built System VM template in secondary storage to automatically provision System VMs (Secondary Storage VM and Console Proxy VM) during zone initialization:
 
 ```bash
-sudo /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m /export/secondary -u http://download.cloudstack.org/systemvm/4.18/systemvmtemplate-4.18.0-kvm.qcow2.bz2 -h kvm -F
+sudo /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt \
+    -m /export/secondary \
+    -u http://download.cloudstack.org/systemvm/4.18/systemvmtemplate-4.18.0-kvm.qcow2.bz2 \
+    -h kvm \
+    -F
 ```
 
 ---
 
-## Phase 6 — Konfigurasi Infrastruktur CloudStack
+## Phase 6 — CloudStack Infrastructure Configuration
 
-Login ke dashboard `http://192.168.101.220:8080/client/`.
+Access the CloudStack management dashboard at `http://192.168.101.220:8080/client/` and proceed through the following infrastructure provisioning steps.
 
-### 6.1 Membuat Advanced Zone
+### 6.1 Advanced Zone Creation
 
-`Infrastructure → Zones → + Add Zone`
+Navigate to `Infrastructure → Zones → + Add Zone` and configure the zone as follows:
 
 | Field | Value |
 |-------|-------|
 | Zone Type | Advanced |
-| Name | `QuizServer-Zone` |
-| IPv4 DNS1 | `8.8.8.8` |
-| Internal DNS1 | `192.168.101.220` |
-| Hypervisor | KVM |
+| Zone Name | `QuizServer-Zone` |
+| Primary DNS (IPv4) | `8.8.8.8` |
+| Internal DNS | `192.168.101.220` |
+| Hypervisor Type | KVM |
 | Guest CIDR | `10.1.0.0/16` |
 
-**Public IP Range:**
+**Public IP Address Pool Configuration:**
 
 | Field | Value |
 |-------|-------|
@@ -543,34 +585,38 @@ Login ke dashboard `http://192.168.101.220:8080/client/`.
 | Start IP | `192.168.101.230` |
 | End IP | `192.168.101.240` |
 
-![Add Zone](https://hackmd.io/_uploads/HJ3PX2TeGg.png)
+CloudStack will allocate IP addresses from this pool for Virtual Router public interfaces and any Elastic IP assignments within the zone.
 
-### 6.2 Pod, Cluster, Host
+![Zone Creation Wizard](https://hackmd.io/_uploads/HJ3PX2TeGg.png)
 
-**Pod:**
+### 6.2 Pod, Cluster, and Host Registration
 
-| Field | Value |
-|-------|-------|
-| Name | `Pod-Quiz-1` |
-| Gateway | `192.168.101.1` |
-| Reserved IP range | `192.168.101.100 – .150` |
-
-**Cluster:**
+**Pod Configuration:**
 
 | Field | Value |
 |-------|-------|
-| Name | `KVM-Cluster-1` |
+| Pod Name | `Pod-Quiz-1` |
+| Reserved IP Gateway | `192.168.101.1` |
+| Reserved IP Range | `192.168.101.100 – 192.168.101.150` |
+
+The Pod's reserved IP range is used by CloudStack System VMs and must not overlap with DHCP-assigned or statically configured host addresses.
+
+**Cluster Configuration:**
+
+| Field | Value |
+|-------|-------|
+| Cluster Name | `KVM-Cluster-1` |
 | Hypervisor | KVM |
 
-**Host:**
+**Host Registration:**
 
 | Field | Value |
 |-------|-------|
-| Host IP | `192.168.101.220` |
+| Host IP Address | `192.168.101.220` |
 | Username | `root` |
-| Password | *(root password host)* |
+| Password | *(root account password of the Ubuntu Server host)* |
 
-Pastikan SSH root enabled:
+CloudStack communicates with the KVM agent over SSH as root. Root SSH login must be enabled on the hypervisor host prior to host registration:
 
 ```bash
 sudo passwd root
@@ -578,151 +624,167 @@ sudo sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 sudo systemctl restart sshd
 ```
 
-### 6.3 Primary & Secondary Storage
+> **Security consideration:** Root SSH access should be restricted to the management network or disabled and replaced with key-based authentication in production deployments. For this academic implementation, password-based root login is enabled to satisfy CloudStack's default host provisioning requirements.
 
-| Storage | Protocol | Server | Path |
-|---------|----------|--------|------|
-| Primary | NFS | `192.168.101.220` | `/export/primary` |
-| Secondary | NFS | `192.168.101.220` | `/export/secondary` |
+### 6.3 Primary and Secondary Storage Registration
 
-Setelah Zone berhasil dibuat → **Launch Zone** → tunggu System VM (SSVM, CPVM) deploy otomatis (~5–10 menit).
+| Storage Role | NFS Protocol | NFS Server | Export Path |
+|--------------|--------------|------------|-------------|
+| Primary Storage | NFS | `192.168.101.220` | `/export/primary` |
+| Secondary Storage | NFS | `192.168.101.220` | `/export/secondary` |
 
-![Zone Enabled](https://hackmd.io/_uploads/H1Ij73pxfl.png)
+Upon successful zone completion, click **Launch Zone**. CloudStack will automatically provision the Secondary Storage VM (SSVM) and Console Proxy VM (CPVM) from the previously registered system template. This process typically requires 5–10 minutes.
 
-### 6.4 Register ISO Ubuntu 22.04
+![Zone Enabled Status](https://hackmd.io/_uploads/H1Ij73pxfl.png)
 
-`Images → ISOs → + Register ISO`
+### 6.4 Ubuntu 22.04 LTS ISO Registration
+
+Navigate to `Images → ISOs → + Register ISO` and complete the registration form:
 
 | Field | Value |
 |-------|-------|
 | Name | `Ubuntu-22.04-Server` |
 | URL | `http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso` |
 | Zone | `QuizServer-Zone` |
-| Bootable | ✅ |
+| Bootable | ✅ Enabled |
 | OS Type | Ubuntu 22.04 LTS |
 
-ISO diunduh terlebih dahulu dari Windows host, lalu dikirim ke Ubuntu Server menggunakan `scp`. Setelah itu ISO disajikan dari direktori lokal Ubuntu Server menggunakan Python HTTP server, sehingga CloudStack mengambil ISO dari LAN internal yang jauh lebih cepat daripada download langsung dari internet.
+**ISO Distribution Procedure (LAN-local serving):**
+
+Direct ISO download from an internet source is unreliable in constrained or isolated lab environments, as SSVM download timeouts and DNS instability may cause repeated registration failures. The recommended procedure is to serve the ISO from the CloudStack host itself over the local area network:
 
 ```powershell
-# Windows host
+# On the Windows workstation: transfer ISO to the Ubuntu Server host
 scp ubuntu-22.04.5-live-server-amd64.iso ubuntu@192.168.101.220:~/iso/
 ```
 
 ```bash
-# Ubuntu Server / CloudStack host
+# On the Ubuntu Server / CloudStack host: serve ISO via Python HTTP server
 cd ~/iso
 python3 -m http.server 8000 --bind 192.168.101.220
 ```
 
-Gunakan URL berikut saat register ISO:
+Register the ISO using the following LAN-local URL, which the SSVM will retrieve at substantially higher throughput than an external internet source:
 
-```text
+```
 http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso
 ```
 
-Tunggu status berubah dari `Not Ready` → `Ready`.
+Monitor ISO status from `Images → ISOs` until it transitions from `Not Ready` to `Ready`.
 
-![ISO Ready](https://hackmd.io/_uploads/Hy1y4hTeGe.png)
+![ISO Ready Status](https://hackmd.io/_uploads/Hy1y4hTeGe.png)
 
-### 6.5 Compute Offering
+### 6.5 Compute Service Offering Configuration
 
-`Service Offerings → Compute Offerings → + Add`
+Compute offerings define the virtual hardware profile — vCPU count, clock allocation, and memory — assigned to provisioned VM instances.
 
-**Compute offering yang tersedia:**
+Navigate to `Service Offerings → Compute Offerings → + Add` to register the following offerings:
 
-| Name | Display Text / Fungsi | CPU Cores | CPU MHz | Memory | Storage | Zone |
-|------|------------------------|-----------|---------|--------|---------|------|
-| `Small Instance` | Small Instance | `1` | `500` | `512 MB` | - | Global/default |
-| `Medium Instance` | Medium Instance | `1` | `1000` | `1024 MB` | - | Global/default |
-| `quizlivesmall` | Lightweight stateless services: API gateway, load balancer, bastion host, dan microservices. | `1` | `1000` | `512 MB` | `10 GB local SSD` | `QuizServer-Zone` |
-| `quizlivemedium` | Relational database workload MySQL 8.0, transactional integrity, dan moderate concurrency. | `1` | `1000` | `1024 MB` | `20 GB local SSD` | `QuizServer-Zone` |
+**Standard Offerings (Global):**
 
-**Custom offering untuk QuizLive:**
+| Offering Name | Display Text | vCPU | CPU MHz | Memory | Scope |
+|---------------|--------------|------|---------|--------|-------|
+| `Small Instance` | Small Instance | `1` | `500` | `512 MB` | Global |
+| `Medium Instance` | Medium Instance | `1` | `1000` | `1024 MB` | Global |
 
-| Field | `quizlivesmall` | `quizlivemedium` |
-|-------|------------------|-------------------|
-| CPU Cores | `1` | `1` |
-| CPU MHz | `1000` | `1000` |
+**QuizLive-Specific Offerings:**
+
+| Offering Name | Intended Workload | vCPU | CPU MHz | Memory | Local Storage | Zone |
+|---------------|-------------------|------|---------|--------|---------------|------|
+| `quizlivesmall` | Lightweight stateless services: API gateway, bastion host, microservices | `1` | `1000` | `512 MB` | `10 GB SSD` | `QuizServer-Zone` |
+| `quizlivemedium` | Relational database workloads (MySQL 8.0), transactional processing, moderate concurrency | `1` | `1000` | `1024 MB` | `20 GB SSD` | `QuizServer-Zone` |
+
+**Detailed Offering Comparison:**
+
+| Parameter | `quizlivesmall` | `quizlivemedium` |
+|-----------|-----------------|------------------|
+| vCPU Cores | `1` | `1` |
+| CPU Frequency | `1000 MHz` | `1000 MHz` |
 | Memory | `512 MB` | `1024 MB` |
-| Storage | `10 GB local SSD` | `20 GB local SSD` |
+| Local Storage | `10 GB SSD` | `20 GB SSD` |
 | Thin Provisioning | Enabled | Enabled |
-| Zone | `QuizServer-Zone` | `QuizServer-Zone` |
+| Zone Scope | `QuizServer-Zone` | `QuizServer-Zone` |
 
-Untuk VM backend dan database `quizlive-db-vm`, gunakan `quizlivemedium`.
+The `quizlivemedium` offering is selected for the combined application and database VM `quizlive-db-vm`.
 
-> **Catatan resource:** `quizlivesmall` awalnya disiapkan untuk service API yang ringan dan stateless. Namun pada implementasi ini API dan database digabung di VM `quizlive-db-vm` dengan offering `quizlivemedium`, karena laptop host memiliki RAM 24 GB dan environment CloudStack nested virtualization sering mati saat jumlah compute/VM ditambah. Keputusan ini menjaga deployment tetap stabil untuk kebutuhan demo dan pengujian end-to-end.
+> **Architecture note:** The `quizlivesmall` offering was originally designed for a dedicated stateless API gateway instance. However, due to the resource constraints inherent in a nested virtualization environment (host RAM: 24 GB), and the observed instability caused by running multiple concurrent VMs under CloudStack nested virtualization, the decision was made to consolidate both the API server and the MySQL database onto a single `quizlive-db-vm` instance using the `quizlivemedium` offering. This consolidation ensures deployment stability throughout demo and end-to-end testing cycles.
 
-![Compute Offering](https://hackmd.io/_uploads/Bk6b43axfl.png)
+![Compute Offering Configuration](https://hackmd.io/_uploads/Bk6b43axfl.png)
 
-### 6.6 Isolated Guest Network
+### 6.6 Isolated Guest Network Provisioning
 
-`Network → Guest Networks → + Add Network`
+Navigate to `Network → Guest Networks → + Add Network` and configure the isolated network as follows:
 
 | Field | Value |
 |-------|-------|
-| Name | `QuizLive-Isolated-OK` |
+| Network Name | `QuizLive-Isolated-OK` |
 | Network Offering | `DefaultIsolatedNetworkOfferingWithSourceNatService` |
-| Gateway | `10.1.1.1` |
-| Netmask | `255.255.255.0` |
-| VLAN | `100` (auto) |
+| Guest Gateway | `10.1.1.1` |
+| Guest Netmask | `255.255.255.0` |
+| VLAN Assignment | `100` (automatically assigned) |
 
-Virtual Router otomatis ter-deploy dengan Public IP `192.168.101.232` (Source NAT).
+Upon network creation, CloudStack automatically provisions a Virtual Router VM and assigns it the public IP address `192.168.101.232` from the zone's public IP pool. This Virtual Router performs Source NAT for all outbound traffic originating from the `10.1.1.0/24` isolated guest subnet, and serves as the sole ingress gateway for inbound DNAT port forwarding rules.
 
-![Isolated Network](https://hackmd.io/_uploads/S1mDE2axze.png)
+![Isolated Network Configuration](https://hackmd.io/_uploads/S1mDE2axze.png)
 
 ---
 
-## Phase 7 — Deploy VM Instance
+## Phase 7 — VM Instance Provisioning
 
-`Compute → Instances → + Add Instance`
+Navigate to `Compute → Instances → + Add Instance` and configure the deployment parameters as follows:
 
-| Step | Field | Value |
-|------|-------|-------|
+| Step | Parameter | Value |
+|------|-----------|-------|
 | Setup | Zone | `QuizServer-Zone` |
-| | Template/ISO | ISO → `Ubuntu-22.04-Server` |
-| Compute Offering | Choose | `quizlivemedium` |
-| Networks | Select | `QuizLive-Isolated-OK` |
-| Advanced | Name | `quizlive-db-vm` |
+| | Template / ISO | ISO → `Ubuntu-22.04-Server` |
+| Compute Offering | Selection | `quizlivemedium` |
+| Network | Guest Network | `QuizLive-Isolated-OK` |
+| Advanced | Instance Name | `quizlive-db-vm` |
 
-Launch Instance → tunggu ~3–5 menit hingga status `Running`.
+Click **Launch Instance** and await VM provisioning. Status will transition to `Running` within approximately 3–5 minutes.
 
-Verifikasi NICs:
-- IPv4: `10.1.1.230`
-- Network: `QuizLive-Isolated-OK`
-- Gateway: `10.1.1.1`
+**Post-provisioning NIC verification:**
 
-![Instance Running](https://hackmd.io/_uploads/By5sV26eze.png)
+| Parameter | Expected Value |
+|-----------|----------------|
+| Guest IPv4 Address | `10.1.1.230` |
+| Network | `QuizLive-Isolated-OK` |
+| Guest Gateway | `10.1.1.1` |
+
+![VM Instance Running](https://hackmd.io/_uploads/By5sV26eze.png)
 
 ---
 
-## Phase 8 — Konfigurasi VM via View Console
+## Phase 8 — VM Configuration via Console Access
 
-VM berada di isolated network sehingga akses awal harus via **View Console** (VNC embedded di dashboard).
+Because `quizlive-db-vm` resides within the isolated `10.1.1.0/24` network — which is non-routable from the physical LAN — all initial configuration must be performed via the embedded VNC console provided by the CloudStack Console Proxy VM (CPVM).
 
-**8.1 Buka console**
+### 8.1 Accessing the VNC Console
 
-Klik instance `quizlive-db-vm` → klik **View Console** → window VNC terbuka → ikuti wizard installer Ubuntu.
+From the CloudStack dashboard, click the `quizlive-db-vm` instance entry, then click **View Console**. The Console Proxy VM opens a VNC session to the guest VM within the browser, allowing full keyboard and display interaction through the CloudStack management plane.
 
-![View Console](https://hackmd.io/_uploads/B1E1B2TlGx.png)
+![VNC Console Access](https://hackmd.io/_uploads/B1E1B2TlGx.png)
 
-**8.2 Instalasi Ubuntu**
+### 8.2 Ubuntu Server Guest Installation
+
+Complete the Ubuntu Server installation wizard within the VNC console session using the following parameters:
 
 | Setting | Value |
 |---------|-------|
 | Hostname | `quizlive-db-vm` |
-| Username | `quizlive-db` |
-| Network | Automatic (DHCP): `10.1.1.x/24`, gateway `10.1.1.1`, DNS `8.8.8.8` |
-| Storage | Use entire disk + LVM |
-| OpenSSH | ✅ |
+| Primary User | `quizlive-db` |
+| Network Configuration | Automatic (DHCP via Virtual Router): `10.1.1.x/24`, gateway `10.1.1.1`, DNS `8.8.8.8` |
+| Storage Layout | Full disk with LVM |
+| OpenSSH Server | ✅ Enabled |
 
-**8.3 Update & install dependencies**
+### 8.3 System Update and Dependency Installation
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y curl wget vim git build-essential ca-certificates gnupg
 ```
 
-**8.4 Install Node.js 20.x**
+### 8.4 Node.js 20.x LTS Installation
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -730,7 +792,7 @@ sudo apt install -y nodejs
 node -v && npm -v
 ```
 
-**8.5 Install MySQL Server**
+### 8.5 MySQL 8.0 Server Installation
 
 ```bash
 sudo apt install -y mysql-server
@@ -738,41 +800,50 @@ sudo systemctl enable --now mysql
 sudo mysql_secure_installation
 ```
 
-![MySQL Installed](https://hackmd.io/_uploads/rkXIS3plfe.png)
+![MySQL Server Installation Complete](https://hackmd.io/_uploads/rkXIS3plfe.png)
 
 ---
 
-## Phase 9 — Deployment Backend
+## Phase 9 — Backend Application Deployment
 
-**9.1 Setup database & user**
+### 9.1 Database and Application User Provisioning
 
 ```bash
 sudo mysql -u root -p
 ```
 
 ```sql
-CREATE DATABASE enterprise_quizapp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- Database creation with Unicode support
+CREATE DATABASE enterprise_quizapp
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
 
+-- Application user accounts with principle of least privilege
 CREATE USER 'quiz_api_worker'@'localhost' IDENTIFIED BY 'CompEng!QuizSecured@2026';
-CREATE USER 'quiz_api_worker'@'%' IDENTIFIED BY 'CompEng!QuizSecured@2026';
+CREATE USER 'quiz_api_worker'@'%'         IDENTIFIED BY 'CompEng!QuizSecured@2026';
 
+-- Privilege grant: localhost (full DML + DDL for migrations)
 GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE, CREATE, ALTER, INDEX, DROP, REFERENCES
-  ON enterprise_quizapp.* TO 'quiz_api_worker'@'localhost';
+    ON enterprise_quizapp.* TO 'quiz_api_worker'@'localhost';
+
+-- Privilege grant: remote (restricted to DML operations only)
 GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE
-  ON enterprise_quizapp.* TO 'quiz_api_worker'@'%';
+    ON enterprise_quizapp.* TO 'quiz_api_worker'@'%';
 
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
-**9.2 (Opsional) Allow MySQL remote**
+### 9.2 MySQL Remote Connections (Optional)
+
+To permit remote connections to the MySQL instance (e.g., for external administration tools):
 
 ```bash
 sudo sed -i 's/bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo systemctl restart mysql
 ```
 
-**9.3 Clone backend & install**
+### 9.3 Repository Cloning and Dependency Installation
 
 ```bash
 cd ~
@@ -781,7 +852,7 @@ cd CloudStack-5/compeng-quiz-api
 npm install
 ```
 
-**9.4 Konfigurasi environment**
+### 9.4 Environment Variable Configuration
 
 ```bash
 cp .env.example .env
@@ -804,13 +875,17 @@ JWT_EXPIRES_IN=24h
 BCRYPT_ROUNDS=12
 ```
 
-**9.5 Initialize schema**
+> **Security note:** In production deployments, the `JWT_SECRET` value must be replaced with a cryptographically random string of sufficient entropy (minimum 256 bits). The value shown above is a development placeholder and must not be used in any externally accessible environment.
+
+### 9.5 Database Schema Initialization
 
 ```bash
 mysql -u quiz_api_worker -p enterprise_quizapp < src/database/quizapp.sql
 ```
 
-**9.6 Start dengan PM2**
+### 9.6 Process Management via PM2
+
+PM2 (Process Manager 2) is deployed as the Node.js process supervisor, providing automatic process restart on failure, persistent startup configuration, and centralized log aggregation.
 
 ```bash
 sudo npm install -g pm2
@@ -818,51 +893,58 @@ sudo npm install -g pm2
 pm2 start src/app.js --name quizlive-api
 pm2 save
 pm2 startup systemd
-# copy & jalankan perintah sudo yang ditampilkan
+# Execute the sudo command printed by pm2 startup to register the systemd unit
 
 pm2 list
 pm2 logs quizlive-api --lines 20
 ```
 
-![PM2 Running](https://hackmd.io/_uploads/S13zT3plGl.png)
-![PM2 Logs](https://hackmd.io/_uploads/Hk7Qpnpxzl.png)
+![PM2 Process Status](https://hackmd.io/_uploads/S13zT3plGl.png)
+![PM2 Application Logs](https://hackmd.io/_uploads/Hk7Qpnpxzl.png)
 
-**9.7 Test lokal**
+### 9.7 Local API Endpoint Verification
 
 ```bash
 curl http://localhost:3000/health
-# {"success":true,"service":"CompEng Quiz API","version":"1.0.0","env":"production"}
+# Expected: {"success":true,"service":"CompEng Quiz API","version":"1.0.0","env":"production"}
 ```
 
 ---
 
-## Phase 10 — Port Forwarding & Firewall
+## Phase 10 — Port Forwarding and Firewall Policy Configuration
 
-### 10.1 Firewall Rules
+Inbound access to the application VM from the physical LAN is established through two mechanisms on the CloudStack Virtual Router:
 
-`Network → Public IP Addresses → 192.168.101.232 → Firewall`
+1. **Firewall Rules** — permit inbound TCP traffic on specified ports at the Virtual Router's public IP interface.
+2. **Port Forwarding (DNAT) Rules** — translate destination port numbers from the public interface to the guest VM's private IP and port.
 
-| Source CIDR | Protocol | Start Port | End Port |
-|-------------|----------|------------|----------|
-| `0.0.0.0/0` | TCP | `3000` | `3000` |
-| `0.0.0.0/0` | TCP | `2222` | `2222` |
+### 10.1 Firewall Ingress Rules
 
-![Firewall Rules](https://hackmd.io/_uploads/ByDYanplMe.png)
+Navigate to `Network → Public IP Addresses → 192.168.101.232 → Firewall` and create the following ingress policies:
 
-### 10.2 Port Forwarding Rules
+| Source CIDR | Protocol | Start Port | End Port | Purpose |
+|-------------|----------|------------|----------|---------|
+| `0.0.0.0/0` | TCP | `3000` | `3000` | Application API and WebSocket access |
+| `0.0.0.0/0` | TCP | `2222` | `2222` | SSH administrative access to guest VM |
 
-`Network → Public IP Addresses → 192.168.101.232 → Port Forwarding`
+![Firewall Rules Configuration](https://hackmd.io/_uploads/ByDYanplMe.png)
 
-| Public Port | Private Port | Protocol | VM | Private IP |
-|-------------|--------------|----------|-----|------------|
+### 10.2 DNAT Port Forwarding Rules
+
+Navigate to `Network → Public IP Addresses → 192.168.101.232 → Port Forwarding` and create the following DNAT translation rules:
+
+| Public Port | Private Port | Protocol | Target Instance | Guest Private IP |
+|-------------|--------------|----------|-----------------|------------------|
 | `3000` | `3000` | TCP | `quizlive-db-vm` | `10.1.1.230` |
 | `2222` | `22` | TCP | `quizlive-db-vm` | `10.1.1.230` |
 
-![Port Forwarding](https://hackmd.io/_uploads/HJdsThTxMx.png)
+![Port Forwarding Rules](https://hackmd.io/_uploads/HJdsThTxMx.png)
 
-> **Mengapa port 2222?** Port 22 pada host Ubuntu sudah digunakan SSH host fisik. Untuk menghindari konflik di Public IP `192.168.101.232`, SSH ke VM dipetakan ke port `2222`.
+> **Port 2222 design rationale:** The standard SSH port (TCP 22) on the public IP `192.168.101.232` would conflict with the CloudStack host's SSH service, as the same public IP is shared with the host system's management interface in this configuration. Mapping SSH access to the guest VM through the alternate port `2222` eliminates this conflict and allows independent SSH sessions to both the CloudStack host (port 22 directly via `192.168.101.220`) and the guest VM (port 2222 via `192.168.101.232`).
 
-### 10.3 UFW di VM (opsional, defense-in-depth)
+### 10.3 Guest VM Host-Based Firewall (Defense-in-Depth)
+
+As an additional layer of access control within the guest VM itself, UFW may be configured to enforce host-level ingress filtering independent of the Virtual Router's perimeter firewall:
 
 ```bash
 sudo ufw allow 22/tcp
@@ -871,203 +953,205 @@ sudo ufw --force enable
 sudo ufw status verbose
 ```
 
-### 10.4 Verifikasi dari Host Windows
+### 10.4 Connectivity Verification from Windows Workstation
 
 ```powershell
-# Test API
+# Verify API endpoint reachability
 curl http://192.168.101.232:3000/health
 
-# Test SSH
+# Verify SSH access via DNAT
 ssh quizlive-db@192.168.101.232 -p 2222
 
-# Test WebSocket
+# Verify WebSocket transport availability
 curl http://192.168.101.232:3000/socket.io/
-# {"code":0,"message":"Transport unknown"}
+# Expected: {"code":0,"message":"Transport unknown"}
 ```
 
-![Test cURL](https://hackmd.io/_uploads/r19klapgzl.png)
+![cURL Connectivity Test](https://hackmd.io/_uploads/r19klapgzl.png)
 
 ---
 
-## Phase 11 — Deployment Frontend
+## Phase 11 — Frontend Application Deployment
 
-Frontend dijalankan di **Windows host**.
+The React + Vite frontend is served from the Windows workstation in development mode, communicating with the backend API through the CloudStack Virtual Router's public IP.
 
 ```bash
 git clone https://github.com/DHard4114/CloudStack-5.git
 cd CloudStack-5/compeng-quiz-fe
 
 cp .env.example .env
-# Edit .env:
+# Configure environment variables:
 # VITE_API_URL=http://192.168.101.232:3000
 # VITE_SOCKET_URL=http://192.168.101.232:3000
 
 npm run dev
 ```
 
-Akses **http://localhost:5173**.
+Access the application at **http://localhost:5173**.
 
-Build production (opsional):
+**Production Build (Optional):**
 
 ```bash
 npm run build
 npm run preview
 ```
 
-![Frontend Landing](https://hackmd.io/_uploads/H1wKxTTgzg.png)
+![Frontend Landing Page](https://hackmd.io/_uploads/H1wKxTTgzg.png)
 
 ---
 
-## Phase 12 — Pengujian End-to-End
+## Phase 12 — End-to-End System Validation
 
-Pengujian dilakukan dengan dua peran:
+System validation is performed under two concurrent user roles:
 
-- **Admin/Guru** menjalankan dashboard dari laptop untuk membuat akun, membuat kuis, membuka sesi, memulai permainan, memantau skor, dan mengakhiri sesi.
-- **Client/Siswa** menggunakan HP pada jaringan yang sama untuk join quiz memakai kode sesi, menjawab pertanyaan, dan melihat hasil.
+- **Administrator / Educator** — operates the management dashboard from a laptop to create accounts, author quiz content, manage sessions, monitor real-time scoring, and terminate sessions.
+- **Participant / Student** — accesses the platform from a mobile device on the same LAN to join sessions via access code, submit answers, and view leaderboard results.
 
-### 12.1 Registrasi Akun Admin/Guru
+### 12.1 Administrator Account Registration
 
-Admin membuat akun guru melalui halaman register.
+The administrator creates an educator account through the registration interface.
 
-![Admin Register Placeholder](https://hackmd.io/_uploads/SyPHbopgMe.png)
+![Admin Registration](https://hackmd.io/_uploads/SyPHbopgMe.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru |
-| Flow | Register account |
-| Expected Result | Akun berhasil dibuat dan dapat digunakan untuk login |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator |
+| Operation | Account registration |
+| Expected Outcome | Account successfully created and operable for authentication |
 
-### 12.2 Login Admin/Guru
+### 12.2 Administrator Authentication
 
-Admin login menggunakan akun yang sudah dibuat.
+The administrator authenticates using the previously registered credentials.
 
-![Admin Login Placeholder](https://hackmd.io/_uploads/SkFdfjpeMg.png)
+![Admin Login](https://hackmd.io/_uploads/SkFdfjpeMg.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru |
-| Flow | Login |
-| Expected Result | Admin masuk ke dashboard QuizLive |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator |
+| Operation | Authentication / Login |
+| Expected Outcome | Administrator successfully redirected to the QuizLive management dashboard |
 
-### 12.3 Membuat Quiz
+### 12.3 Quiz Content Creation
 
-Admin membuat quiz baru dari dashboard.
+The administrator creates a new quiz from the dashboard.
 
-![Create Quiz Placeholder](https://hackmd.io/_uploads/HkWXfiTeGe.png)
+![Create Quiz](https://hackmd.io/_uploads/HkWXfiTeGe.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru |
-| Flow | Create quiz |
-| Expected Result | Quiz baru tersimpan dan muncul di daftar quiz |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator |
+| Operation | Quiz creation |
+| Expected Outcome | New quiz persisted to the database and visible in the quiz management listing |
 
-### 12.4 Menambahkan Pertanyaan
+### 12.4 Question and Response Option Authoring
 
-Admin menambahkan pertanyaan, pilihan jawaban, dan jawaban benar ke dalam quiz.
+The administrator adds questions, multiple-choice answer options, and designates correct responses.
 
-![Add Questions Placeholder](https://hackmd.io/_uploads/S1177saezl.png)
+![Add Questions](https://hackmd.io/_uploads/S1177saezl.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru |
-| Flow | Add questions |
-| Expected Result | Pertanyaan tersimpan dan siap dimainkan |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator |
+| Operation | Question authoring |
+| Expected Outcome | Questions saved and associated with the quiz, ready for session deployment |
 
-### 12.5 Membuka Sesi Quiz
+### 12.5 Quiz Session Initiation
 
-Admin membuka sesi quiz sehingga sistem menghasilkan kode join/PIN untuk client.
+The administrator opens a quiz session, generating a unique join code / PIN for participant entry.
 
-![Session Code Placeholder](https://hackmd.io/_uploads/SkccXo6ezx.png)
+![Session Code](https://hackmd.io/_uploads/SkccXo6ezx.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru |
-| Flow | Open quiz session |
-| Expected Result | Kode join/PIN muncul dan bisa dipakai client |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator |
+| Operation | Session creation |
+| Expected Outcome | Session join code / PIN generated and displayed for participant distribution |
 
-### 12.6 Client HP Join Quiz
+### 12.6 Participant Mobile Client Session Entry
 
-Client membuka aplikasi dari HP, memasukkan kode join/PIN, lalu mengisi nama peserta.
+Participants navigate to the application from a mobile device, enter the session join code / PIN, and provide a display name.
 
-![Mobile Join Placeholder](https://hackmd.io/_uploads/BkOgNs6eMl.png)
+![Mobile Client — Join Quiz](https://hackmd.io/_uploads/BkOgNs6eMl.png)
 
-![Mobile Join Placeholder](https://hackmd.io/_uploads/rJNWEiaeGx.png)
+![Mobile Client — Code Entry](https://hackmd.io/_uploads/rJNWEiaeGx.png)
 
-![Mobile Join Placeholder](https://hackmd.io/_uploads/HkCZNoTgze.png)
+![Mobile Client — Waiting Room](https://hackmd.io/_uploads/HkCZNoTgze.png)
 
-![admin preview](https://hackmd.io/_uploads/SkGL4o6xzg.png)
+![Administrator — Participant Lobby View](https://hackmd.io/_uploads/SkGL4o6xzg.png)
 
-| Item | Value |
-|------|-------|
-| Role | Client/Siswa |
-| Device | HP |
-| Flow | Join quiz using session code |
-| Expected Result | Client berhasil masuk ke waiting room |
+| Parameter | Value |
+|-----------|-------|
+| Role | Participant / Student |
+| Device | Mobile device |
+| Operation | Session join via access code |
+| Expected Outcome | Participant successfully enters the waiting room; presence reflected in administrator lobby view |
 
-### 12.7 Admin Memulai Quiz
+### 12.7 Quiz Session Start
 
-Setelah peserta masuk, admin menekan tombol start untuk memulai quiz.
+After all participants have joined, the administrator initiates the quiz session.
 
-![Start Quiz Placeholder](https://hackmd.io/_uploads/Sy5cEsTxfl.png)
+![Start Quiz Session](https://hackmd.io/_uploads/Sy5cEsTxfl.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru |
-| Flow | Start session |
-| Expected Result | Pertanyaan pertama tampil ke client secara real-time |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator |
+| Operation | Session start |
+| Expected Outcome | First question distributed to all connected participants via Socket.IO real-time events |
 
-### 12.8 Client Menjawab Pertanyaan
+### 12.8 Participant Answer Submission
 
-Client menjawab pertanyaan dari HP. Jawaban dikirim ke backend melalui API dan update real-time dikirim melalui Socket.IO.
+Participants submit answers from their mobile devices. Answer payloads are transmitted to the backend API via HTTP POST, with real-time state updates propagated to all connected clients via Socket.IO events.
 
-![Mobile Answer Placeholder](https://hackmd.io/_uploads/HkQWrsTxMx.png)
+![Mobile Client — Answer Submission](https://hackmd.io/_uploads/HkQWrsTxMx.png)
 
-| Item | Value |
-|------|-------|
-| Role | Client/Siswa |
-| Flow | Submit answer |
-| Expected Result | Jawaban client tercatat dan status permainan berubah |
+| Parameter | Value |
+|-----------|-------|
+| Role | Participant / Student |
+| Operation | Answer submission |
+| Expected Outcome | Answer recorded in the database; game state updated and propagated via Socket.IO |
 
-### 12.9 Skor dan Leaderboard Terlihat
+### 12.9 Real-Time Score and Leaderboard Updates
 
-Admin dan client dapat melihat skor/leaderboard setelah jawaban diproses.
+Both the administrator and participants can observe live score updates and leaderboard rankings as answers are processed.
 
-![Leaderboard Placeholder](https://hackmd.io/_uploads/rkLxBopgGx.png)
+![Leaderboard View](https://hackmd.io/_uploads/rkLxBopgGx.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru dan Client/Siswa |
-| Flow | Score update |
-| Expected Result | Skor tampil dan leaderboard ter-update secara real-time |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator and Participant / Student |
+| Operation | Score update observation |
+| Expected Outcome | Scores and leaderboard rankings updated in real time via Socket.IO broadcast events |
 
-### 12.10 Sesi Quiz Selesai
+### 12.10 Session Termination
 
-Admin mengakhiri sesi quiz setelah seluruh pertanyaan selesai.
+The administrator concludes the quiz session upon completion of all questions.
 
-![End Session Placeholder](https://hackmd.io/_uploads/BkU24jpxzx.png)
+![End Session](https://hackmd.io/_uploads/BkU24jpxzx.png)
 
-| Item | Value |
-|------|-------|
-| Role | Admin/Guru |
-| Flow | End session |
-| Expected Result | Sesi selesai dan hasil akhir dapat dilihat |
+| Parameter | Value |
+|-----------|-------|
+| Role | Administrator / Educator |
+| Operation | Session termination |
+| Expected Outcome | Session marked as complete; final results accessible to all participants |
 
-**Ringkasan skenario:**
+---
 
-| # | Skenario | Endpoint / Mekanisme | Status |
-|---|----------|----------------------|--------|
-| 1 | Registrasi guru | `POST /api/auth/register` | ✅ |
-| 2 | Login guru | `POST /api/auth/login` | ✅ |
-| 3 | Buat quiz | `POST /api/quizzes` | ✅ |
-| 4 | Tambah pertanyaan | `POST /api/quizzes/:uuid/questions` | ✅ |
-| 5 | Buka sesi dan generate kode join | `POST /api/sessions` | ✅ |
-| 6 | Client HP join quiz | Frontend → input kode join/PIN | ✅ |
-| 7 | Admin mulai quiz | `POST /api/sessions/:uuid/start` | ✅ |
-| 8 | Client submit jawaban | `POST /api/sessions/:uuid/answer` | ✅ |
-| 9 | Skor/leaderboard update | Socket.IO real-time event | ✅ |
-| 10 | Admin akhiri sesi | `POST /api/sessions/:uuid/end` | ✅ |
+### End-to-End Test Scenario Summary
 
-**Network test:**
+| # | Test Scenario | API Endpoint / Mechanism | Status |
+|---|---------------|--------------------------|--------|
+| 1 | Educator account registration | `POST /api/auth/register` | ✅ Pass |
+| 2 | Educator authentication | `POST /api/auth/login` | ✅ Pass |
+| 3 | Quiz creation | `POST /api/quizzes` | ✅ Pass |
+| 4 | Question authoring | `POST /api/quizzes/:uuid/questions` | ✅ Pass |
+| 5 | Session creation and join code generation | `POST /api/sessions` | ✅ Pass |
+| 6 | Participant session join via mobile client | Frontend → session code entry | ✅ Pass |
+| 7 | Quiz session start | `POST /api/sessions/:uuid/start` | ✅ Pass |
+| 8 | Participant answer submission | `POST /api/sessions/:uuid/answer` | ✅ Pass |
+| 9 | Real-time leaderboard update | Socket.IO broadcast event | ✅ Pass |
+| 10 | Session termination | `POST /api/sessions/:uuid/end` | ✅ Pass |
+
+### Network Connectivity Validation
 
 ```bash
 ping 192.168.101.232
@@ -1076,13 +1160,13 @@ curl http://192.168.101.232:3000/socket.io/
 ssh quizlive-db@192.168.101.232 -p 2222
 ```
 
-**Failover PM2:**
+### PM2 Process Resilience Validation
 
 ```bash
-pm2 stop quizlive-api      # Simulasi crash
-pm2 start quizlive-api     # Recovery
-sudo reboot                # Test auto-start
-pm2 list                   # Status: online
+pm2 stop quizlive-api      # Simulate process failure
+pm2 start quizlive-api     # Validate manual recovery
+sudo reboot                # Validate systemd auto-start on host restart
+pm2 list                   # Expected status: online
 ```
 
 ---
@@ -1092,123 +1176,218 @@ pm2 list                   # Status: online
 <details>
 <summary><b>Error: <code>Incorrect arguments to mysqld_stmt_execute</code></b></summary>
 
-**Penyebab:** Jumlah placeholder `?` di SQL tidak sama dengan jumlah parameter.
+**Root Cause:**
+A SQL prepared statement contains a mismatch between the number of positional placeholder parameters (`?`) and the number of bound argument values passed at execution time, causing the MySQL server to reject the statement.
 
-**Solusi:** Periksa file `session.repository.js` atau `gameSocket.js` pada `INSERT INTO participant_answers`. Setelah perbaikan, lakukan `git pull && pm2 restart quizlive-api` di VM.
+**Technical Explanation:**
+This error typically manifests in `session.repository.js` or `gameSocket.js` within the `INSERT INTO participant_answers` statement, where a column was added or removed from the schema without updating the corresponding parameterized query.
+
+**Resolution Procedure:**
+1. Identify the affected prepared statement in the relevant source file.
+2. Count and reconcile the number of `?` placeholders with the number of bound parameters.
+3. Commit the fix to the repository.
+4. On the guest VM, pull the corrected code and restart the application process:
+
+```bash
+cd ~/CloudStack-5/compeng-quiz-api
+git pull
+pm2 restart quizlive-api
+```
+
+**Verification Step:**
+```bash
+pm2 logs quizlive-api --lines 30
+curl http://localhost:3000/health
+```
 
 </details>
 
 <details>
-<summary><b>SSH ke VM Timeout</b></summary>
+<summary><b>SSH to Guest VM — Connection Timeout</b></summary>
 
-**Penyebab:** Host (`192.168.101.x`) dan VM (`10.1.1.x`) di subnet berbeda, tidak ada rute langsung.
+**Root Cause:**
+Direct SSH to the guest VM's private IP (`10.1.1.x`) is not possible from the physical LAN because the isolated guest network (`10.1.1.0/24`) is a non-routable, RFC 1918-private segment with no direct L3 path to the physical LAN subnet (`192.168.101.0/24`). Traffic must traverse the CloudStack Virtual Router via DNAT port forwarding.
 
-**Solusi:** Gunakan port forwarding via Public IP:
+**Technical Explanation:**
+CloudStack Advanced Zones with isolated networks use VLAN segmentation and the Virtual Router as the sole inter-network transit point. No routing advertisement is made from the guest subnet to the physical LAN, ensuring strict tenant isolation.
+
+**Resolution Procedure:**
+Always connect to the guest VM via the Virtual Router's public IP using the mapped SSH port:
 
 ```powershell
 ssh quizlive-db@192.168.101.232 -p 2222
 ```
+
+**Verification Step:**
+Confirm the port forwarding rule for `2222 → 10.1.1.230:22` is active in `Network → Public IP Addresses → 192.168.101.232 → Port Forwarding`.
 
 </details>
 
 <details>
 <summary><b>Mixed Content Error (HTTPS Frontend → HTTP Backend)</b></summary>
 
-**Penyebab:** Browser memblokir request HTTP dari halaman HTTPS.
+**Root Cause:**
+Modern browsers enforce the Mixed Content security policy, which blocks active mixed content (e.g., HTTP API requests or WebSocket connections) initiated from an HTTPS-served page. When the frontend is served over HTTPS and the backend is accessible only over HTTP, all outbound requests are blocked by the browser at the transport layer.
 
-**Solusi:**
-- Jalankan frontend lokal (HTTP): `npm run dev`
-- Atau gunakan Cloudflare Tunnel: `cloudflared tunnel --url http://192.168.101.232:3000`
-- Atau Ngrok: `ngrok http 192.168.101.232:3000`
+**Technical Explanation:**
+The browser's Mixed Content blocking is enforced at the origin level and cannot be bypassed through CORS headers or application-level configuration, as it is a client-side security control.
+
+**Resolution Procedure:**
+Select one of the following approaches based on the operational context:
+
+Option A — Run the frontend locally over HTTP (development mode):
+```bash
+npm run dev
+# Access at http://localhost:5173
+```
+
+Option B — Expose the backend over HTTPS using Cloudflare Tunnel:
+```bash
+cloudflared tunnel --url http://192.168.101.232:3000
+```
+
+Option C — Expose the backend over HTTPS using Ngrok:
+```bash
+ngrok http 192.168.101.232:3000
+```
+
+**Verification Step:**
+Open the browser developer tools (`F12 → Console`) and confirm the absence of Mixed Content warnings after applying the selected resolution.
 
 </details>
 
 <details>
-<summary><b>ISO Ubuntu Status <code>Not Ready</code></b></summary>
+<summary><b>ISO Registration Status Remains <code>Not Ready</code></b></summary>
 
-**Penyebab:** Download ISO langsung dari internet terlalu lambat, SSVM timeout saat mengambil file, atau koneksi DNS/internet dari environment CloudStack tidak stabil.
+**Root Cause:**
+The SSVM (Secondary Storage VM) is responsible for downloading and caching registered ISO images. Direct download from an internet URL may fail due to: (1) insufficient internet bandwidth causing SSVM download timeouts, (2) intermittent DNS resolution failures within the CloudStack network namespace, or (3) instability in the internet uplink from the lab environment.
 
-**Solusi yang dipakai pada deployment ini:** download ISO dari Windows, kirim ke Ubuntu Server, lalu serve ISO dari direktori lokal Ubuntu Server memakai Python HTTP server.
+**Technical Explanation:**
+CloudStack's SSVM initiates ISO downloads as a background task. If the download does not complete within the internal timeout window, or if the NFS write operation is interrupted, the ISO status will remain `Not Ready` indefinitely until the registration is retried.
 
-1. Download ISO Ubuntu Server 22.04.5 dari Windows host.
+**Resolution Procedure:**
+Serve the ISO from the CloudStack host itself over the local area network to eliminate internet dependency:
 
-```text
-ubuntu-22.04.5-live-server-amd64.iso
-```
+1. Download the ISO on the Windows workstation.
 
-2. Kirim ISO ke Ubuntu Server / CloudStack host.
-
+2. Transfer the ISO to the CloudStack host:
 ```powershell
 scp ubuntu-22.04.5-live-server-amd64.iso ubuntu@192.168.101.220:~/iso/
 ```
 
-3. Jalankan HTTP server lokal dari Ubuntu Server.
-
+3. Launch a local HTTP file server on the CloudStack host:
 ```bash
 cd ~/iso
 python3 -m http.server 8000 --bind 192.168.101.220
 ```
 
-4. Register ISO di CloudStack dengan URL lokal berikut.
-
-```text
+4. Re-register the ISO using the LAN-local URL:
+```
 http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso
 ```
 
-5. Tunggu status ISO berubah dari `Not Ready` menjadi `Ready`.
+5. Monitor ISO status until it transitions to `Ready`.
 
-Jika masih `Not Ready`, restart SSVM dari `Infrastructure → System VMs → SSVM → Reboot`, lalu register ulang ISO dengan URL lokal yang sama.
+**Verification Step:**
+If the status remains `Not Ready` after 10 minutes, reboot the SSVM from `Infrastructure → System VMs → SSVM → Reboot`, then re-register the ISO using the same LAN-local URL.
 
 </details>
 
 <details>
-<summary><b>VM Tidak Dapat Internet</b></summary>
+<summary><b>Guest VM Cannot Reach Internet</b></summary>
 
-**Solusi:**
+**Root Cause:**
+Outbound internet connectivity for the guest VM is provided exclusively through the CloudStack Virtual Router via Source NAT. If the Virtual Router is in a degraded or non-operational state, all outbound NAT translations will fail and the guest VM will lose internet access.
 
-1. Cek Virtual Router status `Running` di dashboard.
-2. Restart Virtual Router: `Infrastructure → Virtual Routers → Reboot`.
-3. Set DNS manual di VM:
+**Resolution Procedure:**
+
+1. Verify Virtual Router operational status in `Infrastructure → Virtual Routers`. Confirm state is `Running`.
+2. If the Virtual Router is in a degraded state, initiate a reboot from `Infrastructure → Virtual Routers → Reboot`.
+3. If DNS resolution is failing within the guest VM, configure static nameservers in the guest Netplan configuration:
 
 ```yaml
 nameservers:
   addresses: [8.8.8.8, 1.1.1.1]
 ```
 
-</details>
-
-<details>
-<summary><b>CloudStack Agent Connection Refused</b></summary>
-
-**Solusi:**
-
+**Verification Step:**
 ```bash
-sudo cat /etc/cloudstack/agent/agent.properties | grep host=
-# Pastikan: host=192.168.101.220
-
-sudo systemctl restart libvirtd cloudstack-agent
-sudo tail -100 /var/log/cloudstack/agent/agent.log
+ping -c 3 8.8.8.8        # ICMP reachability
+ping -c 3 google.com      # DNS resolution + ICMP
+curl http://ifconfig.me   # Outbound NAT validation
 ```
 
 </details>
 
 <details>
-<summary><b>Port 3000 Tidak Accessible dari Host</b></summary>
+<summary><b>CloudStack Agent — Connection Refused</b></summary>
 
-**Checklist:**
+**Root Cause:**
+The CloudStack agent (`cloudstack-agent`) is bound to an incorrect host IP address in its properties file, preventing the management server from establishing the control-plane connection required for VM lifecycle operations.
 
-- [ ] PM2 status `online`? → `pm2 list`
-- [ ] Backend listening di `0.0.0.0`? → `sudo ss -tlnp | grep 3000`
-- [ ] UFW allow 3000? → `sudo ufw status`
-- [ ] Firewall rule di CloudStack untuk port 3000?
-- [ ] Port forwarding rule aktif?
+**Technical Explanation:**
+The agent's `host` property must match the IP address on which the management server is listening — specifically, the `cloudbr0` bridge interface address. If the agent is configured with the NAT interface address (`10.0.3.15`) or `localhost`, the management server cannot route requests to the agent.
+
+**Resolution Procedure:**
+```bash
+sudo cat /etc/cloudstack/agent/agent.properties | grep ^host=
+# Expected: host=192.168.101.220
+
+# If incorrect, update the file:
+sudo vim /etc/cloudstack/agent/agent.properties
+# Set: host=192.168.101.220
+
+sudo systemctl restart libvirtd cloudstack-agent
+```
+
+**Verification Step:**
+```bash
+sudo tail -100 /var/log/cloudstack/agent/agent.log | grep -E "Connected|ERROR|WARN"
+```
+
+The log should show a successful connection to the management server without repeated reconnection attempts.
 
 </details>
 
 <details>
-<summary><b>CORS Error</b></summary>
+<summary><b>Port 3000 Not Accessible from External Hosts</b></summary>
 
-**Solusi:** Tambahkan middleware CORS di backend:
+**Root Cause:**
+Failure to reach the application API on port 3000 from external hosts can result from any of several independent failure points across the infrastructure stack.
+
+**Diagnostic Checklist:**
+
+- [ ] **PM2 process status:** Is the `quizlive-api` process in `online` state?
+  ```bash
+  pm2 list
+  ```
+- [ ] **Application bind address:** Is the Node.js server listening on `0.0.0.0` (all interfaces) rather than `127.0.0.1` (loopback only)?
+  ```bash
+  sudo ss -tlnp | grep 3000
+  ```
+- [ ] **Guest VM host-based firewall:** Is UFW permitting inbound TCP on port 3000?
+  ```bash
+  sudo ufw status
+  ```
+- [ ] **CloudStack firewall rule:** Is there an active firewall ingress rule permitting TCP 3000 on the Virtual Router public IP `192.168.101.232`?
+- [ ] **CloudStack DNAT rule:** Is there an active port forwarding rule mapping `192.168.101.232:3000 → 10.1.1.230:3000`?
+
+**Verification Step:**
+After resolving the identified failure point:
+```bash
+curl http://192.168.101.232:3000/health
+```
+
+</details>
+
+<details>
+<summary><b>CORS Policy Violation</b></summary>
+
+**Root Cause:**
+The browser's Cross-Origin Resource Sharing (CORS) enforcement blocks API requests when the response does not include the appropriate `Access-Control-Allow-Origin` header matching the requesting origin. This occurs when the backend CORS middleware is not configured to permit the frontend's origin.
+
+**Resolution Procedure:**
+Add or update the CORS middleware configuration in the backend application entry point:
 
 ```javascript
 import cors from 'cors';
@@ -1222,37 +1401,60 @@ app.use(cors({
 }));
 ```
 
-`pm2 restart quizlive-api`.
+After updating the configuration, restart the application process:
+```bash
+pm2 restart quizlive-api
+```
+
+**Verification Step:**
+Open the browser developer tools (`F12 → Network`), re-attempt the failing request, and confirm that the response includes the `Access-Control-Allow-Origin` header with a value matching the requesting origin.
 
 </details>
 
 <details>
-<summary><b>Nested Virtualization Disabled</b></summary>
+<summary><b>Nested Virtualization Not Enabled</b></summary>
 
-**Solusi:**
+**Root Cause:**
+KVM's ability to provision hardware-accelerated guest VMs requires that Intel VT-x or AMD-V virtualization extensions be visible within the VirtualBox guest environment. By default, VirtualBox does not expose these extensions to guest VMs.
 
+**Resolution Procedure:**
+
+On the Windows host (VirtualBox must be closed):
 ```powershell
-# Windows
 VBoxManage modifyvm "CloudStack-Host" --nested-hw-virt on
 ```
 
+On the Ubuntu Server host:
 ```bash
-# Ubuntu host
 echo "options kvm_intel nested=1" | sudo tee /etc/modprobe.d/kvm.conf
 sudo modprobe -r kvm_intel
 sudo modprobe kvm_intel nested=1
 ```
 
+**Verification Step:**
+```bash
+cat /sys/module/kvm_intel/parameters/nested
+# Expected output: Y
+```
+
 </details>
 
 <details>
-<summary><b>System VM (SSVM/CPVM) Stuck di Starting</b></summary>
+<summary><b>System VM (SSVM / CPVM) Stuck in Starting State</b></summary>
 
-**Solusi:** Destroy via dashboard (`Infrastructure → System VMs → Destroy`), CloudStack akan auto-deploy ulang dalam ~5 menit.
+**Root Cause:**
+CloudStack System VMs (Secondary Storage VM and Console Proxy VM) may enter a persistent `Starting` state due to resource contention, NFS mount failures, or KVM provisioning errors during zone initialization or after a host restart.
 
+**Resolution Procedure:**
+Destroy the affected System VM from `Infrastructure → System VMs → [VM Name] → Destroy`. CloudStack will automatically re-provision a replacement System VM within approximately 5 minutes using the registered system template.
+
+**Diagnostic Log Inspection:**
 ```bash
 sudo tail -100 /var/log/cloudstack/management/management-server.log | grep -i ssvm
 ```
+
+**Verification Step:**
+Monitor `Infrastructure → System VMs` until the replacement System VM reaches `Running` state and all associated services (NFS mount, SSH connectivity) are confirmed operational by the management server.
 
 </details>
 
@@ -1260,92 +1462,94 @@ sudo tail -100 /var/log/cloudstack/management/management-server.log | grep -i ss
 
 ## Command Reference
 
-### Host Ubuntu (CloudStack)
+### CloudStack Host (Ubuntu Server)
 
 ```bash
-# CloudStack services
+# CloudStack service management
 sudo systemctl status cloudstack-management
 sudo systemctl restart cloudstack-management
 sudo systemctl status cloudstack-agent
+sudo systemctl restart cloudstack-agent
 
-# Logs
+# Log monitoring
 sudo tail -f /var/log/cloudstack/management/management-server.log
 sudo tail -f /var/log/cloudstack/agent/agent.log
 
-# KVM
+# KVM hypervisor operations
 sudo virsh list --all
-sudo virsh dominfo vm-name
-sudo virsh console vm-name
+sudo virsh dominfo <vm-name>
+sudo virsh console <vm-name>
 
-# NFS
+# NFS storage verification
 showmount -e localhost
 sudo systemctl status nfs-kernel-server
 
-# Network
+# Network diagnostics
 ip addr show
 sudo brctl show
 sudo iptables -t nat -L
 ```
 
-### VM Backend
+### Guest VM — Backend Application
 
 ```bash
-# PM2
+# PM2 process management
 pm2 list
 pm2 logs quizlive-api
 pm2 restart quizlive-api
 pm2 monit
 
-# Update kode
+# Application code update
 cd ~/CloudStack-5/compeng-quiz-api
 git pull origin main
 npm install
 pm2 restart quizlive-api
 
-# MySQL
+# MySQL database operations
 mysql -u quiz_api_worker -p enterprise_quizapp
 mysqldump -u quiz_api_worker -p enterprise_quizapp > backup.sql
 
-# Network
+# Network and service diagnostics
 curl http://localhost:3000/health
 sudo ss -tlnp | grep 3000
 ```
 
-### Windows Host
+### Windows Workstation
 
 ```powershell
-# Test API
+# API endpoint reachability test
 curl http://192.168.101.232:3000/health
 
-# SSH ke VM
+# SSH to guest VM via DNAT
 ssh quizlive-db@192.168.101.232 -p 2222
 
-# Copy file ke VM
-scp -P 2222 file.txt quizlive-db@192.168.101.232:~/
+# Secure file transfer to guest VM via DNAT
+scp -P 2222 <local-file> quizlive-db@192.168.101.232:~/
 
-# VirtualBox
+# VirtualBox VM management
 VBoxManage list vms
 VBoxManage startvm "CloudStack-Host" --type headless
 ```
 
 ---
 
-## Struktur Repository
+## Repository Structure
 
 ```text
 QuizLive-CloudStack/
 ├── README.md
 ├── LICENSE
 ├── infrastructure/
-│   ├── netplan/
-│   ├── cloudstack/
-│   └── nfs/
-├── compeng-quiz-api/         # Backend Node.js + Express
+│   ├── netplan/                       # Netplan YAML configurations
+│   ├── cloudstack/                    # CloudStack configuration artifacts
+│   └── nfs/                           # NFS export configuration
+├── compeng-quiz-api/                  # Backend: Node.js + Express + Socket.IO
 │   ├── src/
-│   ├── src/database/quizapp.sql
+│   │   └── database/
+│   │       └── quizapp.sql            # Database schema and seed data
 │   ├── package.json
 │   └── .env.example
-└── compeng-quiz-fe/          # Frontend React + Vite
+└── compeng-quiz-fe/                   # Frontend: React + Vite
     ├── src/
     ├── package.json
     └── .env.example
@@ -1355,43 +1559,47 @@ QuizLive-CloudStack/
 
 ## Quick Start
 
-Untuk yang sudah punya infrastruktur ready:
+For environments where the CloudStack infrastructure is already provisioned and operational, the application stack can be deployed using the following abbreviated procedure.
 
-**Backend (di VM):**
+**Backend Deployment (on the guest VM):**
 
 ```bash
 git clone https://github.com/DHard4114/CloudStack-5.git
 cd CloudStack-5/compeng-quiz-api
 npm install
 cp .env.example .env
+# Configure DB credentials and JWT secret in .env
 mysql -u quiz_api_worker -p enterprise_quizapp < src/database/quizapp.sql
 pm2 start src/app.js --name quizlive-api
 pm2 save
 ```
 
-**Frontend (di Windows host):**
+**Frontend Deployment (on the Windows workstation):**
 
 ```bash
 git clone https://github.com/DHard4114/CloudStack-5.git
 cd CloudStack-5/compeng-quiz-fe
 npm install
 cp .env.example .env
+# Set VITE_API_URL and VITE_SOCKET_URL to http://192.168.101.232:3000
 npm run dev
 ```
 
-**Akses:**
+**Service Access Points:**
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:5173 |
-| Backend API | http://192.168.101.232:3000 |
-| CloudStack Dashboard | http://192.168.101.220:8080/client/ |
+| Frontend Application | `http://localhost:5173` |
+| Backend REST API | `http://192.168.101.232:3000` |
+| CloudStack Management Dashboard | `http://192.168.101.220:8080/client/` |
 
 ---
 
-## Pengembangan Lanjutan
+## Future Development Roadmap
 
-**Reverse Proxy dengan Cloudflare Tunnel** — akses aplikasi dari internet dengan domain HTTPS:
+### Reverse Proxy and Public Accessibility via Cloudflare Tunnel
+
+Expose the application over a publicly routable HTTPS domain without modifying firewall or NAT rules on the physical network:
 
 ```bash
 sudo dpkg -i cloudflared-linux-amd64.deb
@@ -1400,28 +1608,32 @@ cloudflared tunnel create quizlive-tunnel
 cloudflared tunnel route dns quizlive-tunnel api.quizlive.example.com
 ```
 
-**High Availability:**
-- Management server kedua dengan HAProxy load balancing
-- Galera Cluster untuk MySQL CloudStack DB
-- Keepalived untuk virtual IP failover
+### High Availability Infrastructure
 
-**Auto-Scaling Backend:**
-- Template VM dari `quizlive-db-vm`
-- CloudStack Auto Scale Policy: CPU > 70% → deploy VM baru
-- HAProxy sebagai load balancer di depan API VMs
+- Secondary CloudStack management server with HAProxy load balancing for management plane redundancy.
+- MySQL Galera Cluster for the CloudStack database, providing synchronous multi-master replication.
+- Keepalived with a Virtual IP for management server failover without manual intervention.
 
-**Multi-Tenant:**
-- CloudStack Projects untuk pemisahan resource per kelas
-- Kuota vCPU, RAM, storage independen per project
+### Application-Layer Auto-Scaling
+
+- Create a reusable VM template from the provisioned `quizlive-db-vm` instance.
+- Define a CloudStack Auto Scale Policy: automatically provision additional API VMs when average CPU utilization exceeds 70%.
+- Deploy HAProxy as the load balancer in front of the auto-scaled API VM pool.
+
+### Multi-Tenant Resource Isolation
+
+- Leverage CloudStack Projects to enforce per-course or per-classroom resource boundaries.
+- Define independent vCPU, RAM, and storage quotas for each project, enabling true multi-tenant operation within the shared infrastructure.
 
 ---
 
-## Lisensi
+## License
 
 MIT License — © 2026 Daffa Hardhan & QuizLive Team
-Departemen Teknik Elektro, Fakultas Teknik, Universitas Indonesia
+Department of Electrical Engineering, Faculty of Engineering, Universitas Indonesia
 
 ---
 
-**Referensi:**
-[Apache CloudStack Docs](http://docs.cloudstack.apache.org/) · [Ubuntu Server Guide](https://ubuntu.com/server/docs) · [Socket.IO Docs](https://socket.io/docs/v4/) · [React](https://react.dev/) · [Vite](https://vitejs.dev/)
+## References
+
+[Apache CloudStack Documentation](http://docs.cloudstack.apache.org/) · [Ubuntu Server Guide](https://ubuntu.com/server/docs) · [Socket.IO Documentation](https://socket.io/docs/v4/) · [React Documentation](https://react.dev/) · [Vite Documentation](https://vitejs.dev/) · [PM2 Documentation](https://pm2.keymetrics.io/docs/)

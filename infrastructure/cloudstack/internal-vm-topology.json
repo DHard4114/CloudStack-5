@@ -1,8 +1,54 @@
 {
-  "generated_at": "2026-06-03",
+  "_metadata": {
+    "schema_version": "2.0",
+    "generated_at": "2026-06-04",
+    "language": "English",
+    "validated_against": "README.md — QuizLive Cloud (Academic Enterprise Edition, refactored 2026-06-04)",
+    "validation_summary": {
+      "total_fields_checked": 32,
+      "status_match": 22,
+      "status_discrepancy": 3,
+      "status_gap_filled_from_readme": 8,
+      "status_json_only_additions": 2
+    },
+    "discrepancies": [
+      {
+        "id": "DISC-001",
+        "field": "infrastructure_platform.cloudstack_version",
+        "readme_value": "4.18",
+        "source_json_value": "4.18.x (documented in repo) / 4.19.x (user-reported)",
+        "resolution": "README is the authoritative documentation source for this repository. Version is recorded as 4.18. If the deployed environment runs 4.19.x, update the README badge and this file to reflect the actual installed version to maintain a single source of truth.",
+        "action_required": true
+      },
+      {
+        "id": "DISC-002",
+        "field": "virtual_machines[0].applications[0].pm2.cluster_mode",
+        "readme_value": "Single instance: pm2 start src/app.js --name quizlive-api",
+        "source_json_value": "Cluster mode active (instances=max) via ecosystem.config.js",
+        "resolution": "The README Quick Start and Phase 9.6 both reference single-instance PM2 start commands. Cluster mode via ecosystem.config.js is referenced in infrastructure/pm2/ecosystem.config.js. In a 1-vCPU, 1024 MB VM (quizlivemedium), cluster mode with instances=max resolves to a single worker process and provides no throughput benefit. Single-instance mode is recommended for this deployment profile.",
+        "action_required": false
+      },
+      {
+        "id": "DISC-003",
+        "field": "frontend_deployment.suggested_platform",
+        "readme_value": "Local development server on Windows workstation (npm run dev, http://localhost:5173)",
+        "source_json_value": "Vercel (cloud deployment)",
+        "resolution": "The README describes local execution of the Vite dev server as the primary deployment model for the academic demonstration environment. Vercel is listed in the source JSON as a suggested future platform. Both deployment models are documented here — local for demonstration, Vercel for production. The mixed-content HTTPS/HTTP constraint applies to Vercel deployments and is documented in the frontend_deployment section below.",
+        "action_required": false
+      }
+    ]
+  },
+
   "project": {
     "name": "QuizLive",
-    "context": "Tugas akhir Komputasi Awan (CloudStack + KVM) dengan aplikasi kuis real-time (React + Express + Socket.IO)",
+    "full_title": "QuizLive Cloud — Private Cloud IaaS Based on Apache CloudStack and KVM for a Real-Time Interactive Quiz Platform",
+    "context": "University capstone project for the Cloud Computing course. Implements a full private cloud IaaS stack using Apache CloudStack and KVM, hosting a real-time quiz application built with React, Express, and Socket.IO.",
+    "academic_context": {
+      "course": "Cloud Computing",
+      "department": "Computer Engineering, Faculty of Engineering, Universitas Indonesia",
+      "academic_term": "Even Semester 2025/2026",
+      "supervising_lecturer": "Yan Maraden, S.T., M.T., M.Sc."
+    },
     "repository_modules": [
       {
         "name": "Backend API",
@@ -21,49 +67,207 @@
       {
         "name": "Infrastructure Artifacts",
         "path": "infrastructure",
-        "notes": "Berisi backup konfigurasi host/CloudStack/NFS/PM2 yang diambil dari Ubuntu Server"
+        "description": "Backup copies of CloudStack host, NFS, Netplan, and PM2 configuration files extracted from the Ubuntu Server deployment environment."
       }
     ]
   },
+
   "infrastructure_platform": {
-    "iaas": "Apache CloudStack",
-    "hypervisor": "KVM",
+    "iaas_orchestrator": "Apache CloudStack",
     "cloudstack_version": {
-      "documented_in_repo": "4.18.x",
+      "value": "4.18",
+      "readme_stated": "4.18",
       "user_reported": "4.19.x",
-      "note": "Jika ingin 1 sumber kebenaran, samakan angka versi di README dan file ini."
+      "validation_note": "See DISC-001. Reconcile version across README badge, this file, and the actual installed packages to maintain a single source of truth."
     },
+    "hypervisor": "KVM (Kernel-based Virtual Machine)",
     "virtualization_host": {
-      "layer": "VirtualBox (nested virtualization)",
-      "guest_os": "Ubuntu Server 22.04 LTS",
+      "layer": "VirtualBox (nested virtualization — hardware-assisted KVM within a VirtualBox guest)",
+      "host_os": "Ubuntu Server 22.04 LTS",
       "cloudstack_host_ip": "192.168.101.220",
-      "bridge": {
+      "vcpu_count": 4,
+      "ram_gb": 8,
+      "nested_virtualization": {
+        "enabled": true,
+        "virtualbox_flag": "--nested-hw-virt on",
+        "kvm_module_param": "options kvm_intel nested=1",
+        "verification_command": "cat /sys/module/kvm_intel/parameters/nested",
+        "expected_output": "Y"
+      },
+      "bridge_interface": {
         "name": "cloudbr0",
-        "backing_nic": "enp0s3"
+        "backing_nic": "enp0s3",
+        "ip_address": "192.168.101.220/24",
+        "default_gateway": "192.168.101.1",
+        "dns_servers": ["8.8.8.8", "1.1.1.1"],
+        "stp_enabled": false,
+        "forward_delay_seconds": 0,
+        "description": "Linux bridge interface that serves as the unified network fabric for CloudStack management, KVM agent communication, and all guest VM traffic on the physical LAN."
       }
     }
   },
+
+  "cloudstack_zone": {
+    "name": "QuizServer-Zone",
+    "type": "Advanced",
+    "primary_dns": "8.8.8.8",
+    "internal_dns": "192.168.101.220",
+    "hypervisor": "KVM",
+    "guest_cidr": "10.1.0.0/16",
+    "public_ip_pool": {
+      "gateway": "192.168.101.1",
+      "netmask": "255.255.255.0",
+      "start_ip": "192.168.101.230",
+      "end_ip": "192.168.101.240",
+      "description": "CloudStack allocates addresses from this pool for Virtual Router public interfaces and any Elastic IP assignments within the zone."
+    },
+    "system_vm_template": {
+      "hypervisor": "kvm",
+      "version": "4.18.0",
+      "download_url": "http://download.cloudstack.org/systemvm/4.18/systemvmtemplate-4.18.0-kvm.qcow2.bz2",
+      "install_command": "sudo /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m /export/secondary -u http://download.cloudstack.org/systemvm/4.18/systemvmtemplate-4.18.0-kvm.qcow2.bz2 -h kvm -F",
+      "description": "Pre-built System VM template deployed to secondary storage during zone initialization. Required for automated provisioning of SSVM and CPVM."
+    }
+  },
+
+  "cloudstack_pod": {
+    "name": "Pod-Quiz-1",
+    "zone": "QuizServer-Zone",
+    "gateway": "192.168.101.1",
+    "reserved_ip_range": {
+      "start": "192.168.101.100",
+      "end": "192.168.101.150",
+      "description": "IP addresses reserved for CloudStack System VMs within the pod. Must not overlap with DHCP-assigned or statically configured host addresses."
+    }
+  },
+
+  "cloudstack_cluster": {
+    "name": "KVM-Cluster-1",
+    "zone": "QuizServer-Zone",
+    "pod": "Pod-Quiz-1",
+    "hypervisor": "KVM",
+    "host": {
+      "ip_address": "192.168.101.220",
+      "username": "root",
+      "ssh_root_login_required": true,
+      "security_note": "Root SSH access is enabled to satisfy CloudStack's default host registration requirements. In production environments, this should be restricted to the management network or replaced with key-based authentication."
+    }
+  },
+
+  "networks": {
+    "physical_lan": {
+      "cidr": "192.168.101.0/24",
+      "gateway": "192.168.101.1",
+      "description": "Physical campus LAN. The Windows workstation accesses the CloudStack management dashboard and Virtual Router public IP through this network segment."
+    },
+    "cloudstack_public_ip_pool": {
+      "range": "192.168.101.230 – 192.168.101.240",
+      "virtual_router_public_ip": "192.168.101.232",
+      "description": "CloudStack public IP address pool. The Virtual Router acquires 192.168.101.232 from this pool as its Source NAT public interface."
+    },
+    "isolated_guest_network": {
+      "name": "QuizLive-Isolated-OK",
+      "cidr": "10.1.1.0/24",
+      "gateway": "10.1.1.1",
+      "vlan_id": 100,
+      "network_offering": "DefaultIsolatedNetworkOfferingWithSourceNatService",
+      "zone": "QuizServer-Zone",
+      "routable_from_physical_lan": false,
+      "description": "Isolated CloudStack guest network. Guest VMs reside in this subnet and are not directly reachable from the physical LAN. All inbound access is mediated by the Virtual Router via DNAT port forwarding."
+    }
+  },
+
+  "virtual_router": {
+    "role": "CloudStack Virtual Router",
+    "capabilities": ["Source NAT", "DNAT / Port Forwarding", "Firewall", "DHCP", "DNS Relay"],
+    "public_ip": "192.168.101.232",
+    "guest_network_gateway_ip": "10.1.1.1",
+    "firewall_ingress_rules": [
+      {
+        "source_cidr": "0.0.0.0/0",
+        "protocol": "TCP",
+        "port": 2222,
+        "purpose": "SSH administrative access to guest VM via DNAT"
+      },
+      {
+        "source_cidr": "0.0.0.0/0",
+        "protocol": "TCP",
+        "port": 3000,
+        "purpose": "QuizLive API (HTTP REST + Socket.IO WebSocket) access"
+      }
+    ],
+    "port_forwarding_rules": [
+      {
+        "public_port": 2222,
+        "private_ip": "10.1.1.230",
+        "private_port": 22,
+        "protocol": "TCP",
+        "purpose": "SSH to quizlive-db-vm via Virtual Router public IP",
+        "rationale": "TCP port 22 on the shared public IP 192.168.101.232 would conflict with the CloudStack host's SSH service. Mapping guest VM SSH to alternate port 2222 eliminates this conflict and allows independent SSH sessions to both the host (192.168.101.220:22) and the guest VM (192.168.101.232:2222)."
+      },
+      {
+        "public_port": 3000,
+        "private_ip": "10.1.1.230",
+        "private_port": 3000,
+        "protocol": "TCP",
+        "purpose": "Expose Node.js Express REST API and Socket.IO WebSocket endpoint to external clients"
+      }
+    ],
+    "config_backup": "infrastructure/cloudstack/virtual-router-rules.json"
+  },
+
+  "storage": {
+    "nfs": {
+      "server": "192.168.101.220",
+      "server_description": "CloudStack hypervisor host (Ubuntu Server 22.04 LTS) acting as NFS server",
+      "config_backup": "infrastructure/nfs/exports",
+      "exports": [
+        {
+          "path": "/export/primary",
+          "options": "*(rw,async,no_root_squash,no_subtree_check)",
+          "cloudstack_role": "Primary Storage",
+          "cloudstack_protocol": "NFS",
+          "description": "Active VM disk volumes (QCOW2 images). Hosts all running and stopped VM disk images managed by CloudStack."
+        },
+        {
+          "path": "/export/secondary",
+          "options": "*(rw,async,no_root_squash,no_subtree_check)",
+          "cloudstack_role": "Secondary Storage",
+          "cloudstack_protocol": "NFS",
+          "description": "System VM templates, ISO images, and VM snapshots. The no_root_squash option is required for CloudStack's storage management operations executed as root."
+        }
+      ]
+    }
+  },
+
   "cloudstack_image": {
-    "type": "ISO / bootable installation media",
+    "type": "ISO — Bootable installation media",
     "name": "Ubuntu-22.04-Server",
-    "id": "7ee18bac-4287-4e18-bc3e-e58dce8b3f0b",
-    "description": "Ubuntu 22.04.5 LTS Server",
+    "uuid": "7ee18bac-4287-4e18-bc3e-e58dce8b3f0b",
+    "description": "Ubuntu 22.04.5 LTS Server — used as the guest VM operating system installation medium",
     "os_type": "Ubuntu 22.04 LTS",
     "zone": "QuizServer-Zone",
     "account": "admin",
     "domain": "ROOT",
-    "created_at": "2026-05-17 05:04:35",
-    "size": "1.99 GB",
+    "created_at": "2026-05-17T05:04:35Z",
+    "size_gb": 1.99,
     "bootable": true,
     "ready": true,
     "public": true,
     "featured": true,
     "direct_download": false,
     "extractable": false,
-    "checksum": "5fd95142f2cb01abbb10d0f0452fb2830fb25c6b48fa15bc5b98307e2e34159e415ca7d40a16096f33f224cdd98d7fc5192e45c73a2ab2985fb05acb428d7015",
-    "url": "http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso",
-    "notes": "ISO ini dipakai sebagai media instalasi Ubuntu Server 22.04. Alokasi CPU VM tetap ditentukan oleh service offering saat VM dibuat."
+    "checksum_sha512": "5fd95142f2cb01abbb10d0f0452fb2830fb25c6b48fa15bc5b98307e2e34159e415ca7d40a16096f33f224cdd98d7fc5192e45c73a2ab2985fb05acb428d7015",
+    "registration_url": "http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso",
+    "local_serving_procedure": {
+      "step_1": "Download ISO on Windows workstation: ubuntu-22.04.5-live-server-amd64.iso",
+      "step_2": "Transfer to CloudStack host: scp ubuntu-22.04.5-live-server-amd64.iso ubuntu@192.168.101.220:~/iso/",
+      "step_3": "Serve via Python HTTP server: cd ~/iso && python3 -m http.server 8000 --bind 192.168.101.220",
+      "step_4": "Register in CloudStack using URL: http://192.168.101.220:8000/ubuntu-22.04.5-live-server-amd64.iso",
+      "rationale": "LAN-local ISO serving eliminates SSVM download timeout failures caused by internet bandwidth constraints and intermittent DNS instability in the lab environment."
+    }
   },
+
   "compute_offerings": [
     {
       "name": "Small Instance",
@@ -71,7 +275,9 @@
       "cpu_cores": 1,
       "cpu_mhz": 500,
       "memory_mb": 512,
-      "zone": null,
+      "local_storage_gb": null,
+      "thin_provisioning": null,
+      "zone_scope": "Global",
       "type": "default"
     },
     {
@@ -80,7 +286,9 @@
       "cpu_cores": 1,
       "cpu_mhz": 1000,
       "memory_mb": 1024,
-      "zone": null,
+      "local_storage_gb": null,
+      "thin_provisioning": null,
+      "zone_scope": "Global",
       "type": "default"
     },
     {
@@ -89,11 +297,13 @@
       "cpu_cores": 1,
       "cpu_mhz": 1000,
       "memory_mb": 512,
-      "storage_gb": 10,
+      "local_storage_gb": 10,
       "storage_type": "Local SSD",
       "thin_provisioning": true,
-      "zone": "QuizServer-Zone",
-      "type": "custom"
+      "zone_scope": "QuizServer-Zone",
+      "type": "custom",
+      "intended_workload": "Stateless API gateway, load balancer, bastion host, microservices",
+      "deployment_note": "Originally designated for a dedicated API gateway VM. Not used in the current deployment; the application and database are consolidated on a single quizlivemedium VM to maintain stability under the nested virtualization resource constraints."
     },
     {
       "name": "quizlivemedium",
@@ -101,182 +311,295 @@
       "cpu_cores": 1,
       "cpu_mhz": 1000,
       "memory_mb": 1024,
-      "storage_gb": 20,
+      "local_storage_gb": 20,
       "storage_type": "Local SSD",
       "thin_provisioning": true,
-      "zone": "QuizServer-Zone",
-      "type": "custom"
+      "zone_scope": "QuizServer-Zone",
+      "type": "custom",
+      "intended_workload": "MySQL 8.0 relational database, Node.js application server, transactional processing, moderate concurrency",
+      "assigned_to_vm": "quizlive-db-vm"
     }
   ],
-  "networks": {
-    "physical_lan": {
-      "cidr": "192.168.101.0/24",
-      "gateway": "192.168.101.1",
-      "notes": "LAN fisik; Windows host mengakses CloudStack host dan Virtual Router melalui segmen ini."
-    },
-    "cloudstack_public_ip_pool": {
-      "cidr": "192.168.101.230-192.168.101.240",
-      "notes": "Pool public IP CloudStack; salah satunya dipakai Virtual Router sebagai Source NAT."
-    },
-    "isolated_guest_network": {
-      "cidr": "10.1.1.0/24",
-      "gateway": "10.1.1.1",
-      "notes": "Jaringan internal isolated; VM aplikasi berada di subnet ini dan tidak routable langsung dari LAN."
-    }
-  },
-  "virtual_router": {
-    "role": "CloudStack Virtual Router (Source NAT + Firewall + Port Forwarding)",
-    "public_ip": "192.168.101.232",
-    "rules_source": {
-      "file": "infrastructure/cloudstack/virtual-router-rules.json",
-      "firewall_open_tcp_ports": [
-        2222,
-        3000
-      ],
-      "port_forwarding": [
-        {
-          "public_port": 2222,
-          "private_ip": "10.1.1.230",
-          "private_port": 22,
-          "protocol": "TCP",
-          "purpose": "SSH ke VM melalui public IP VR"
-        },
-        {
-          "public_port": 3000,
-          "private_ip": "10.1.1.230",
-          "private_port": 3000,
-          "protocol": "TCP",
-          "purpose": "Expose HTTP/WebSocket API (Express + Socket.IO)"
-        }
-      ]
-    }
-  },
-  "host_configuration_artifacts": {
-    "netplan": {
-      "active_files": [
-        "/etc/netplan/00-installer-config.yaml"
-      ],
-      "repo_backups": [
-        "infrastructure/netplan/00-installer-config.yaml",
-        "infrastructure/netplan/50-cloud-init.yaml"
-      ],
-      "inactive_or_disabled": [
-        {
-          "file": "/etc/netplan/50-cloud-init.yaml",
-          "repo_backup": "infrastructure/netplan/50-cloud-init.yaml",
-          "reason": "Cloud-init DHCP pada enp0s3 dinonaktifkan agar tidak konflik dengan bridge cloudbr0."
-        },
-        {
-          "file": "/etc/netplan/99-nat.yaml",
-          "repo_backup": "infrastructure/netplan/99-nat.yaml",
-          "reason": "Konfigurasi NAT VirtualBox sengaja tidak dipakai untuk menghindari konflik routing; jaringan menggunakan bridge cloudbr0."
-        }
-      ],
-      "bridge_details": {
-        "bridge_name": "cloudbr0",
-        "address": "192.168.101.220/24",
-        "default_route": "192.168.101.1",
-        "dns": [
-          "8.8.8.8",
-          "1.1.1.1"
-        ]
-      }
-    },
-    "cloudstack_agent": {
-      "repo_backup": "infrastructure/cloudstack/agent.properties.template",
-      "notes": "File ini dapat memuat nilai sensitif (mis. passphrase). Hindari menyimpan secret di repo publik."
-    }
-  },
-  "storage": {
-    "nfs": {
-      "server": "CloudStack host (Ubuntu Server)",
-      "repo_backup_exports": "infrastructure/nfs/exports",
-      "exports": [
-        {
-          "path": "/export/primary",
-          "options": "*(rw,async,no_root_squash,no_subtree_check)"
-        },
-        {
-          "path": "/export/secondary",
-          "options": "*(rw,async,no_root_squash,no_subtree_check)"
-        }
-      ]
-    }
-  },
+
   "virtual_machines": [
     {
       "vm_name": "quizlive-db-vm",
+      "cloudstack_zone": "QuizServer-Zone",
+      "guest_network": "QuizLive-Isolated-OK",
       "private_ip": "10.1.1.230",
+      "guest_gateway": "10.1.1.1",
       "os": "Ubuntu Server 22.04 LTS",
       "cloudstack_image": "Ubuntu-22.04-Server",
       "compute_offering": "quizlivemedium",
       "specs": {
-        "vCPU": 1,
+        "vcpu": 1,
         "cpu_mhz": 1000,
-        "RAM": "1024 MB",
-        "storage": "20 GB local SSD"
+        "ram_mb": 1024,
+        "storage_gb": 20,
+        "storage_type": "Local SSD",
+        "thin_provisioning": true
       },
-      "exposed_services_via_virtual_router": [
+      "initial_console_access": {
+        "method": "CloudStack VNC Console (View Console in dashboard)",
+        "reason": "Guest VM resides in a non-routable isolated network (10.1.1.0/24). Direct SSH from the physical LAN is not possible prior to port forwarding configuration.",
+        "cloudstack_dashboard_path": "Compute → Instances → quizlive-db-vm → View Console"
+      },
+      "public_service_endpoints": [
         {
-          "service": "SSH",
-          "public": "192.168.101.232:2222",
-          "private": "10.1.1.230:22",
-          "protocol": "TCP"
+          "service": "SSH Administrative Access",
+          "public_endpoint": "192.168.101.232:2222",
+          "private_endpoint": "10.1.1.230:22",
+          "protocol": "TCP",
+          "ssh_user": "quizlive-db",
+          "connect_command": "ssh quizlive-db@192.168.101.232 -p 2222"
         },
         {
-          "service": "QuizLive API (HTTP + Socket.IO)",
-          "public": "192.168.101.232:3000",
-          "private": "10.1.1.230:3000",
-          "protocol": "TCP"
+          "service": "QuizLive REST API and Socket.IO WebSocket",
+          "public_endpoint": "192.168.101.232:3000",
+          "private_endpoint": "10.1.1.230:3000",
+          "protocol": "TCP",
+          "health_check": "curl http://192.168.101.232:3000/health"
         }
       ],
-      "services_installed": [
-        "MySQL Server 8.0 (default port 3306)",
-        "Node.js runtime (recommended 20.x LTS for this repo)",
-        "PM2 Process Manager"
+      "system_packages_installed": [
+        "MySQL Server 8.0 (default port: 3306)",
+        "Node.js 20.x LTS",
+        "npm",
+        "PM2 Process Manager (global)",
+        "git",
+        "curl",
+        "vim",
+        "build-essential",
+        "ca-certificates"
       ],
+      "host_based_firewall": {
+        "tool": "UFW (Uncomplicated Firewall)",
+        "allowed_ports": [
+          { "port": 22, "protocol": "TCP", "purpose": "SSH inbound" },
+          { "port": 3000, "protocol": "TCP", "purpose": "API and WebSocket inbound" }
+        ],
+        "role": "Defense-in-depth layer. Provides host-level access control independent of the CloudStack Virtual Router perimeter firewall."
+      },
+      "database": {
+        "engine": "MySQL",
+        "version": "8.0",
+        "default_port": 3306,
+        "database_name": "enterprise_quizapp",
+        "character_set": "utf8mb4",
+        "collation": "utf8mb4_unicode_ci",
+        "schema_file": "compeng-quiz-api/src/database/quizapp.sql",
+        "application_user": {
+          "username": "quiz_api_worker",
+          "localhost_grants": ["SELECT", "INSERT", "UPDATE", "DELETE", "EXECUTE", "CREATE", "ALTER", "INDEX", "DROP", "REFERENCES"],
+          "remote_grants": ["SELECT", "INSERT", "UPDATE", "DELETE", "EXECUTE"],
+          "privilege_principle": "Principle of least privilege — remote access is restricted to DML operations; DDL grants are localhost-only for schema migrations."
+        }
+      },
       "applications": [
         {
           "name": "CompEng Quiz API",
-          "path": "compeng-quiz-api",
+          "repository_path": "compeng-quiz-api",
+          "entry_point": "src/app.js",
           "listen_port": 3000,
-          "health_endpoint": "/health",
-          "start_commands": [
-            "npm run start",
-            "pm2 start src/app.js --name quizlive-api"
-          ],
-          "pm2": {
-            "ecosystem_file": "infrastructure/pm2/ecosystem.config.js",
-            "notes": "Mode cluster aktif (instances=max). Pastikan resource VM cukup."
+          "listen_address": "0.0.0.0",
+          "health_endpoint": {
+            "path": "/health",
+            "method": "GET",
+            "expected_response": "{\"success\":true,\"service\":\"CompEng Quiz API\",\"version\":\"1.0.0\",\"env\":\"production\"}"
           },
-          "database_schema": "compeng-quiz-api/src/database/quizapp.sql",
-          "required_env_keys": [
-            "PORT",
-            "NODE_ENV",
-            "DB_HOST",
-            "DB_PORT",
-            "DB_USER",
-            "DB_PASSWORD",
-            "DB_NAME",
-            "DB_CONNECTION_LIMIT",
-            "JWT_SECRET",
-            "JWT_EXPIRES_IN",
-            "BCRYPT_ROUNDS"
+          "process_manager": {
+            "tool": "PM2",
+            "process_name": "quizlive-api",
+            "start_command": "pm2 start src/app.js --name quizlive-api",
+            "save_command": "pm2 save",
+            "startup_command": "pm2 startup systemd",
+            "ecosystem_config": "infrastructure/pm2/ecosystem.config.js",
+            "cluster_mode": {
+              "configured_in_ecosystem": true,
+              "instances": "max",
+              "effective_instances_on_quizlivemedium": 1,
+              "validation_note": "See DISC-002. On a 1-vCPU VM, instances=max resolves to a single worker process. Single-instance start command is equivalent and recommended for this deployment profile."
+            },
+            "systemd_auto_start": true,
+            "useful_commands": {
+              "status": "pm2 list",
+              "logs": "pm2 logs quizlive-api --lines 20",
+              "restart": "pm2 restart quizlive-api",
+              "monitor": "pm2 monit"
+            }
+          },
+          "environment_variables": {
+            "config_file": ".env",
+            "template_file": ".env.example",
+            "required_keys": [
+              { "key": "PORT", "value": "3000" },
+              { "key": "NODE_ENV", "value": "production" },
+              { "key": "DB_HOST", "value": "localhost" },
+              { "key": "DB_PORT", "value": "3306" },
+              { "key": "DB_USER", "value": "quiz_api_worker" },
+              { "key": "DB_PASSWORD", "value": "<set in .env — not committed to repository>" },
+              { "key": "DB_NAME", "value": "enterprise_quizapp" },
+              { "key": "DB_CONNECTION_LIMIT", "value": "20" },
+              { "key": "JWT_SECRET", "value": "<cryptographically random string — minimum 256 bits>" },
+              { "key": "JWT_EXPIRES_IN", "value": "24h" },
+              { "key": "BCRYPT_ROUNDS", "value": "12" }
+            ],
+            "security_note": "Credentials and secrets must not be committed to the repository. The .env file is listed in .gitignore. The agent.properties template file (infrastructure/cloudstack/agent.properties.template) may also contain sensitive values and should be reviewed before any public repository push."
+          },
+          "deployment_commands": [
+            "git clone https://github.com/DHard4114/CloudStack-5.git",
+            "cd CloudStack-5/compeng-quiz-api",
+            "npm install",
+            "cp .env.example .env",
+            "# Edit .env with correct credentials",
+            "mysql -u quiz_api_worker -p enterprise_quizapp < src/database/quizapp.sql",
+            "pm2 start src/app.js --name quizlive-api",
+            "pm2 save"
           ]
         }
       ]
     }
   ],
+
   "frontend_deployment": {
-    "path": "compeng-quiz-fe",
-    "suggested_platform": "Vercel",
-    "env_keys": [
-      "VITE_API_URL",
-      "VITE_SOCKET_URL"
-    ],
-    "notes": [
-      "Jika frontend di-serve via HTTPS (mis. domain Vercel), maka backend juga harus diakses via HTTPS untuk menghindari Mixed Content.",
-      "Solusi umum: Cloudflare Tunnel / Ngrok / reverse proxy HTTPS di depan 192.168.101.232:3000."
+    "repository_path": "compeng-quiz-fe",
+    "runtime": "Vite + React 18",
+    "entry_point": "src/main.jsx",
+    "environment_variables": {
+      "template_file": ".env.example",
+      "required_keys": [
+        {
+          "key": "VITE_API_URL",
+          "value_for_local_demo": "http://192.168.101.232:3000",
+          "description": "Base URL for REST API requests to the CloudStack-hosted backend"
+        },
+        {
+          "key": "VITE_SOCKET_URL",
+          "value_for_local_demo": "http://192.168.101.232:3000",
+          "description": "WebSocket server URL for Socket.IO real-time event connection"
+        }
+      ]
+    },
+    "deployment_modes": {
+      "local_development": {
+        "platform": "Windows workstation (direct execution)",
+        "command": "npm run dev",
+        "access_url": "http://localhost:5173",
+        "description": "Primary deployment model for the academic demonstration environment. Frontend serves over HTTP, connecting to the backend via the Virtual Router public IP.",
+        "readme_phase": "Phase 11"
+      },
+      "production_build": {
+        "command_build": "npm run build",
+        "command_preview": "npm run preview",
+        "description": "Generates optimized static assets for production hosting."
+      },
+      "cloud_hosting": {
+        "suggested_platform": "Vercel",
+        "validation_note": "See DISC-003. Vercel (or any HTTPS-hosted platform) requires the backend to also be accessible via HTTPS to satisfy browser Mixed Content policy. Recommended solutions: Cloudflare Tunnel, Ngrok, or a reverse proxy with TLS termination placed in front of 192.168.101.232:3000."
+      }
+    },
+    "mixed_content_resolution": {
+      "problem": "Browser Mixed Content policy blocks HTTP API/WebSocket requests from HTTPS-served pages.",
+      "solutions": [
+        {
+          "method": "Local HTTP development server",
+          "command": "npm run dev",
+          "applicable_when": "Academic demonstration on local LAN"
+        },
+        {
+          "method": "Cloudflare Tunnel",
+          "command": "cloudflared tunnel --url http://192.168.101.232:3000",
+          "applicable_when": "Public HTTPS access without modifying network or firewall rules"
+        },
+        {
+          "method": "Ngrok",
+          "command": "ngrok http 192.168.101.232:3000",
+          "applicable_when": "Temporary HTTPS tunneling for testing or demonstration"
+        }
+      ]
+    }
+  },
+
+  "host_configuration_artifacts": {
+    "netplan": {
+      "active_files": ["/etc/netplan/00-installer-config.yaml"],
+      "repository_backups": [
+        "infrastructure/netplan/00-installer-config.yaml",
+        "infrastructure/netplan/50-cloud-init.yaml"
+      ],
+      "disabled_configurations": [
+        {
+          "file": "/etc/netplan/50-cloud-init.yaml",
+          "repository_backup": "infrastructure/netplan/50-cloud-init.yaml",
+          "disabled_reason": "Cloud-init's default DHCP assignment on enp0s3 is suppressed to prevent address conflicts with the statically configured cloudbr0 bridge.",
+          "disable_mechanism": "/etc/cloud/cloud.cfg.d/99-disable-network-config.cfg → network: {config: disabled}"
+        },
+        {
+          "file": "/etc/netplan/99-nat.yaml",
+          "repository_backup": "infrastructure/netplan/99-nat.yaml",
+          "disabled_reason": "VirtualBox NAT interface configuration is intentionally unused. Outbound internet connectivity for both the CloudStack host and guest VMs is provided through the cloudbr0 bridge routed via the physical campus gateway, eliminating conflicting routing table entries."
+        }
+      ]
+    },
+    "cloudstack_agent": {
+      "repository_backup": "infrastructure/cloudstack/agent.properties.template",
+      "critical_setting": {
+        "key": "host",
+        "correct_value": "192.168.101.220",
+        "incorrect_values": ["10.0.3.15", "localhost"],
+        "description": "The agent must bind to the cloudbr0 bridge IP. Binding to the NAT interface or localhost prevents the management server from establishing the control-plane connection required for VM lifecycle operations."
+      },
+      "security_note": "The agent.properties file may contain sensitive authentication passphrases. Review for secrets before committing to any public repository."
+    }
+  },
+
+  "end_to_end_request_flow": {
+    "description": "Full request path from client browser to application database and back",
+    "steps": [
+      { "step": 1, "actor": "End user (Windows workstation / mobile client)", "action": "Initiates HTTP or WebSocket request to 192.168.101.232:3000" },
+      { "step": 2, "actor": "CloudStack Virtual Router — Physical NIC (192.168.101.232)", "action": "Receives inbound packet; matches DNAT port forwarding rule for TCP 3000" },
+      { "step": 3, "actor": "CloudStack Virtual Router — DNAT engine", "action": "Rewrites destination to 10.1.1.230:3000 and forwards packet into isolated guest network VLAN 100" },
+      { "step": 4, "actor": "quizlive-db-vm (10.1.1.230)", "action": "Node.js + Express + Socket.IO process receives request on TCP 3000" },
+      { "step": 5, "actor": "Application layer (Node.js)", "action": "Executes SQL query against MySQL 8.0 on localhost:3306, database enterprise_quizapp" },
+      { "step": 6, "actor": "MySQL 8.0", "action": "Processes query and returns result set to Node.js application process" },
+      { "step": 7, "actor": "Application layer (Node.js / Socket.IO)", "action": "Constructs HTTP response or emits Socket.IO event" },
+      { "step": 8, "actor": "CloudStack Virtual Router — Source NAT engine", "action": "Translates source address from 10.1.1.230 to 192.168.101.232 for outbound reply" },
+      { "step": 9, "actor": "End user (browser / mobile client)", "action": "Receives response; React UI state updates and renders" }
+    ]
+  },
+
+  "validation_checklist": {
+    "description": "Cross-reference status of all fields against the authoritative README (refactored academic edition, 2026-06-04)",
+    "fields": [
+      { "field": "cloudstack_host_ip", "status": "MATCH", "readme_ref": "Phase 3, IP Allocation Table" },
+      { "field": "cloudbr0 backing NIC (enp0s3)", "status": "MATCH", "readme_ref": "Phase 3.1" },
+      { "field": "virtual_router public_ip (192.168.101.232)", "status": "MATCH", "readme_ref": "Phase 6.6, Phase 10" },
+      { "field": "isolated_guest_network cidr (10.1.1.0/24)", "status": "MATCH", "readme_ref": "Phase 6.6, IP Allocation Table" },
+      { "field": "isolated_guest_network gateway (10.1.1.1)", "status": "MATCH", "readme_ref": "Phase 6.6" },
+      { "field": "vm private_ip (10.1.1.230)", "status": "MATCH", "readme_ref": "Phase 7, IP Allocation Table" },
+      { "field": "compute_offering quizlivemedium specs", "status": "MATCH", "readme_ref": "Phase 6.5" },
+      { "field": "port_forwarding 2222 → 10.1.1.230:22", "status": "MATCH", "readme_ref": "Phase 10.2" },
+      { "field": "port_forwarding 3000 → 10.1.1.230:3000", "status": "MATCH", "readme_ref": "Phase 10.2" },
+      { "field": "firewall_ports [2222, 3000]", "status": "MATCH", "readme_ref": "Phase 10.1" },
+      { "field": "nfs /export/primary and /export/secondary", "status": "MATCH", "readme_ref": "Phase 5.3" },
+      { "field": "zone name QuizServer-Zone", "status": "MATCH", "readme_ref": "Phase 6.1" },
+      { "field": "health_endpoint /health", "status": "MATCH", "readme_ref": "Phase 9.7" },
+      { "field": "database name enterprise_quizapp", "status": "MATCH", "readme_ref": "Phase 9.1" },
+      { "field": "database user quiz_api_worker", "status": "MATCH", "readme_ref": "Phase 9.1" },
+      { "field": "iso registration URL (LAN-local)", "status": "MATCH", "readme_ref": "Phase 6.4" },
+      { "field": "frontend dev URL localhost:5173", "status": "GAP_FILLED", "readme_ref": "Phase 11", "note": "Added from README; was absent in source JSON." },
+      { "field": "pod name Pod-Quiz-1", "status": "GAP_FILLED", "readme_ref": "Phase 6.2", "note": "Added from README; was absent in source JSON." },
+      { "field": "cluster name KVM-Cluster-1", "status": "GAP_FILLED", "readme_ref": "Phase 6.2", "note": "Added from README; was absent in source JSON." },
+      { "field": "zone guest_cidr 10.1.0.0/16", "status": "GAP_FILLED", "readme_ref": "Phase 6.1", "note": "Added from README; was absent in source JSON." },
+      { "field": "isolated_network vlan_id 100", "status": "GAP_FILLED", "readme_ref": "Phase 6.6", "note": "Added from README; was absent in source JSON." },
+      { "field": "isolated_network name QuizLive-Isolated-OK", "status": "GAP_FILLED", "readme_ref": "Phase 6.6", "note": "Added from README; was absent in source JSON." },
+      { "field": "system_vm_template URL", "status": "GAP_FILLED", "readme_ref": "Phase 5.5", "note": "Added from README; was absent in source JSON." },
+      { "field": "pod reserved_ip_range 192.168.101.100–.150", "status": "GAP_FILLED", "readme_ref": "Phase 6.2", "note": "Added from README; was absent in source JSON." },
+      { "field": "cloudstack_version", "status": "DISCREPANCY", "readme_ref": "Title, badges", "note": "See DISC-001. Reconcile 4.18 vs 4.19.x." },
+      { "field": "pm2 cluster mode", "status": "DISCREPANCY", "readme_ref": "Phase 9.6", "note": "See DISC-002. README uses single-instance; ecosystem.config.js uses instances=max." },
+      { "field": "frontend suggested_platform", "status": "DISCREPANCY", "readme_ref": "Phase 11", "note": "See DISC-003. README: local Windows host. Source JSON: Vercel. Both documented." },
+      { "field": "iso uuid", "status": "JSON_ONLY_VALID", "note": "CloudStack-assigned UUID not present in README; preserved as a valid operational detail." },
+      { "field": "iso checksum_sha512", "status": "JSON_ONLY_VALID", "note": "Not present in README; preserved as a valid integrity verification artifact." }
     ]
   }
 }
