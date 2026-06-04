@@ -1336,10 +1336,6 @@ VBoxManage startvm "CloudStack-Host" --type headless
 QuizLive-CloudStack/
 ├── README.md
 ├── LICENSE
-├── docs/
-│   ├── MASTER_LOGBOOK.md
-|   ├── SETUP_ISO_LOCAL.md
-│   └── API_DOCUMENTATION.md
 ├── infrastructure/
 │   ├── netplan/
 │   ├── cloudstack/
