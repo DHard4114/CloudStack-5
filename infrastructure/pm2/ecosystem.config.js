@@ -3,8 +3,8 @@ module.exports = {
     name: "compeng-quiz-api",
     script: "./compeng-quiz-api/src/app.js",
     cwd: "./compeng-quiz-api",
-    instances: "max",             // Mengaktifkan mode cluster memanfaatkan seluruh core CPU KVM
-    exec_mode: "cluster",         // Otomatis membagi beban trafik (internal load balancing)
+    instances: "max",
+    exec_mode: "cluster",    
     watch: false,
     autorestart: true,
     env: {

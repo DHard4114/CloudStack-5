@@ -1,7 +1,7 @@
-# Salinan konfigurasi /etc/cloudstack/agent/agent.properties
-# Diambil dari host Ubuntu Server (CloudStack)
-#Storage
-#Wed Jun 03 10:18:30 UTC 2026
+# Copy of configuration /etc/cloudstack/agent/agent.properties
+# Taken from the Ubuntu Server host (CloudStack)
+# Storage
+# Wed Jun 03 10:18:30 UTC 2026
 cluster=1
 pod=1
 resource=com.cloud.hypervisor.kvm.resource.LibvirtComputingResource
